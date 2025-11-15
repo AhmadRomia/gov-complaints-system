@@ -1,0 +1,15 @@
+﻿
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.log
+*.db
+appsettings*.Local.json
+**/migrations/
+.idea/
+*.swp
+.env
+*.db
+*.sqlite
