@@ -59,12 +59,13 @@ namespace Application.Common.Features.Auth.Commands
                 return new AuthResponseDto { Success = false, Message = "Invalid OTP code" };
             }
 
+                
             user.IsVerified = true;
             user.OtpCode = null;
             user.OtpExpiresAt = null;
             await _userManager.UpdateAsync(user);
 
-            var token = _jwtTokenService.GenerateToken(user);
+            var token =await _jwtTokenService.GenerateTokenAsync(user);
 
             return new AuthResponseDto
             {

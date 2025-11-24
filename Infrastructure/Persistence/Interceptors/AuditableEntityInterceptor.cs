@@ -36,13 +36,13 @@ namespace Infrastructure.Persistence.Interceptors
                 if (entry.State == EntityState.Added)
                 {
                     entry.Entity.CreatedAt = _dateService.UtcNow;
-                    entry.Entity.CreatedBy = _currentUser.UserId;
+                    entry.Entity.CreatedBy = _currentUser.UserId.ToString();
                 }
 
                 if (entry.State == EntityState.Modified)
                 {
                     entry.Entity.UpdatedAt = _dateService.UtcNow;
-                    entry.Entity.UpdatedBy = _currentUser.UserId;
+                    entry.Entity.UpdatedBy = _currentUser.UserId.ToString();
                 }
             }
         }

@@ -34,6 +34,7 @@ namespace Infrastructure.Data
                 {
                     admin = new ApplicationUser
                     {
+                        FullName = "Admin",
                         Email = adminEmail,
                         UserName = adminEmail,
                         IsVerified = true

@@ -43,7 +43,7 @@ namespace Application.Common.Features.Auth.Commands
                 return new AuthResponseDto { Success = false, Message = "User not verified" };
             }
 
-            var token = _jwtTokenService.GenerateToken(user);
+            var token =await _jwtTokenService.GenerateTokenAsync(user);
 
             return new AuthResponseDto
             {

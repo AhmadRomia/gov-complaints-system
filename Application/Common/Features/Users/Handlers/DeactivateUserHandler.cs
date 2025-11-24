@@ -20,7 +20,7 @@ namespace Application.Common.Features.Users.Handlers
             var user = await _userManager.FindByIdAsync(request.UserId.ToString());
             if (user == null) return false;
 
-            user.IsActive = false; // تحتاج تضيف الخاصية داخل ApplicationUser
+            user.IsActive = false; 
             var result = await _userManager.UpdateAsync(user);
 
             return result.Succeeded;

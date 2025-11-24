@@ -1,4 +1,5 @@
 ﻿using Application.Common.Interfaces;
+using Domain.Common;
 using Domain.Entities;
 using Infrastructure.Persistence.Interceptors;
 using Microsoft.AspNetCore.Identity;
@@ -23,7 +24,7 @@ namespace Infrastructure.Persistence
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-
+            builder.Ignore<BaseEvent>();
             builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         }
 

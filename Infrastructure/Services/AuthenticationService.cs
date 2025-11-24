@@ -1,4 +1,5 @@
 ﻿using Application.Common.Features.Auth.DTOs;
+using Application.Common.Interfaces;
 using Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 
@@ -8,11 +9,11 @@ namespace Infrastructure.Services
     public class AuthenticationService
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly JwtTokenService _jwt;
+        private readonly IJwtTokenService _jwt;
 
         public AuthenticationService(
             UserManager<ApplicationUser> userManager,
-            JwtTokenService jwt)
+            IJwtTokenService jwt)
         {
             _userManager = userManager;
             _jwt = jwt;
@@ -36,7 +37,7 @@ namespace Infrastructure.Services
             {
                 UserId = user.Id.ToString(),
                 Email = user.Email,
-                Token = _jwt.GenerateToken(user)
+                Token =await _jwt.GenerateTokenAsync(user)
             };
         }
 
@@ -53,7 +54,7 @@ namespace Infrastructure.Services
             {
                 UserId = user.Id.ToString(),
                 Email = user.Email,
-                Token = _jwt.GenerateToken(user)
+                Token =await _jwt.GenerateTokenAsync(user)
             };
         }
     }
