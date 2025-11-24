@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using Application.Common.Exceptions;
 using FluentValidation;
 
 
@@ -24,17 +25,44 @@ namespace WebApi.Middlewares
             {
                 _logger.LogWarning("Validation error: {Message}", ex.Message);
 
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                context.Response.ContentType = "application/json";
+                await WriteErrorResponse(context, StatusCodes.Status400BadRequest, ex.Message,
+                    ex.Errors.Select(e => e.ErrorMessage).ToList());
+            }
+            catch (BadRequestException ex)
+            {
+                _logger.LogWarning("BadRequest: {Message}", ex.Message);
 
-                var response = new
-                {
-                    success = false,
-                    errors = ex.Errors.Select(error => error.ErrorMessage).ToList()
-                };
+                await WriteErrorResponse(context, StatusCodes.Status400BadRequest, ex.Message);
+            }
+            //catch (NotFoundException ex)
+            //{
+            //    _logger.LogWarning("NotFound: {Message}", ex.Message);
 
-                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            //    await WriteErrorResponse(context, StatusCodes.Status404NotFound, ex.Message);
+            //}
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unhandled error");
+
+                await WriteErrorResponse(context, StatusCodes.Status500InternalServerError,
+                    "An unexpected error occurred");
             }
         }
+
+        private async Task WriteErrorResponse(HttpContext context, int statusCode, string message, List<string>? errors = null)
+        {
+            context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/json";
+
+            var response = new
+            {
+                success = false,
+                message,
+                errors
+            };
+
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
     }
+
 }

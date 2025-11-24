@@ -28,9 +28,16 @@ namespace Application.Common.Features.Auth.Commands
         {
             var dto = request.RegisterDto;
 
-            var exists = await _userManager.FindByNameAsync(dto.Phone);
-            if (exists != null)
-                return new AuthResultDto { Success = false, Message = "User already exists" };
+            var existsByUsername = await _userManager.FindByNameAsync(dto.Phone);
+            if (existsByUsername != null)
+                return new AuthResultDto { Success = false, Message = "Phone number already registered" };
+
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+            {
+                var existsByEmail = await _userManager.FindByEmailAsync(dto.Email);
+                if (existsByEmail != null)
+                    return new AuthResultDto { Success = false, Message = "Email already registered" };
+            }
 
             var user = _mapper.Map<ApplicationUser>(dto);
             user.UserName = dto.Phone;

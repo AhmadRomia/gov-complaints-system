@@ -1,13 +1,12 @@
-﻿using AutoMapper;
 using Application.Common.Features.Admin.Dtos;
+using AutoMapper;
 using Domain.Entities;
-
 
 namespace Application.Common.Mappings
 {
-    public class MappingProfile : Profile
+    public class AgencyProfile : Profile
     {
-        public MappingProfile()
+        public AgencyProfile()
         {
             CreateMap<GovernmentEntity, AgencyDto>();
             CreateMap<AgencyCreateDto, GovernmentEntity>();

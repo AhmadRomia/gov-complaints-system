@@ -1,17 +1,12 @@
 ﻿using Application.Common.Features.ComplsintUseCase.DTOs;
-using Application.Common.Features.ComplsintUseCase;
 using Application.Common.Features.ComplsintUseCase.Commands;
 using Application.Common.Features.ComplsintUseCase.Queries;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authorization;
-using System.Text.Json;
-using Domain.Entities;
 using MediatR;
 
 namespace WebApi.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ComplaintController : ControllerBase
@@ -24,23 +19,23 @@ namespace WebApi.Controllers
         }
 
         [HttpGet]
-        [Authorize(Policy = "AgencyPolicy")]
+        //[Authorize(Policy = "AgencyPolicy")]
         public async Task<IActionResult> GetAll() =>
             Ok(await _mediator.Send(new GetAllComplaintsQuery()));
 
         [HttpGet("by-entity/{entityId}")]
-        [Authorize(Policy = "AgencyPolicy")]
+        //[Authorize(Policy = "AgencyPolicy")]
         public async Task<IActionResult> GetByEntity(Guid entityId) =>
             Ok(await _mediator.Send(new GetComplaintsByEntityQuery(entityId)));
 
         [HttpGet("{id}")]
-        [Authorize(Policy = "CitizenPolicy")]
+        //[Authorize(Policy = "CitizenPolicy")]
         public async Task<IActionResult> GetById(Guid id) =>
             Ok(await _mediator.Send(new GetComplaintByIdQuery(id)));
 
         [HttpPost]
-        [Authorize(Policy = "CitizenPolicy")]
-        [RequestSizeLimit(104_857_600)] // 100 MB
+        //[Authorize(Policy = "CitizenPolicy")]
+        [RequestSizeLimit(104_857_600)] 
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Create([FromForm] ComplaintCreateDto dto, [FromForm] List<IFormFile>? attachments)
         {
@@ -57,7 +52,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPut]
-        [Authorize(Policy = "AgencyPolicy")]
+        //[Authorize(Policy = "AgencyPolicy")]
         public async Task<IActionResult> Update(ComplaintUpdateDto dto)
         {
             var r = await _mediator.Send(new UpdateComplaintCommand(dto));
@@ -65,7 +60,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPut("status")]
-        [Authorize(Policy = "AgencyPolicy")]
+        //[Authorize(Policy = "AgencyPolicy")]
         public async Task<IActionResult> SetStatus([FromBody] SetComplaintStatusDto dto)
         {
             var result = await _mediator.Send(new SetComplaintStatusCommand(dto.Id, dto.Status, dto.AgencyNotes, dto.AdditionalInfoRequest));
@@ -73,7 +68,7 @@ namespace WebApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Policy = "AdminPolicy")]
+        //[Authorize(Policy = "AdminPolicy")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var r = await _mediator.Send(new DeleteComplaintCommand(id));
@@ -81,7 +76,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("paged")]
-        [Authorize(Policy = "AgencyPolicy")]
+        //[Authorize(Policy = "AgencyPolicy")]
         public async Task<IActionResult> GetPaged([FromQuery] int page = 1, int size = 10) =>
             Ok(await _mediator.Send(new GetPagedComplaintsQuery(page, size)));
     }
