@@ -64,7 +64,7 @@ namespace Application.Common.Features.Auth.Commands
             user.OtpExpiresAt = null;
             await _userManager.UpdateAsync(user);
 
-            var token = _jwtTokenService.GenerateToken(user);
+            var token =await _jwtTokenService.GenerateTokenAsync(user);
 
             return new AuthResponseDto
             {

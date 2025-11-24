@@ -1,8 +1,13 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Domain.Entities;
 using Infrastructure.Data;
+using Infrastructure.Persistence;
+using Infrastructure.Persistence.Interceptors;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using WebApi.Middlewares;
@@ -22,6 +27,23 @@ builder.Services.Configure<EmailSettings>(
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+builder.Services.AddTransient<IDateTimeService, DateTimeService>();
+builder.Services.AddScoped<AuditableEntityInterceptor>();
+
+builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
+{
+    var interceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
+
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sql => sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)
+    );
+
+    options.AddInterceptors(interceptor);
+});
+
+
+
 
 var key = builder.Configuration["Jwt:Key"];
 
@@ -36,26 +58,39 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = true;
-    options.SaveToken = true;
+    var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidIssuer = jwtSettings.Issuer,
+        ValidIssuer = jwt.Issuer,
         ValidateAudience = true,
-        ValidAudience = jwtSettings.Audience,
+        ValidAudience = jwt.Audience,
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
 });
 
+// Add Authorization + Roles support
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("CitizenPolicy", policy => policy.RequireRole("Citizen"));
+    options.AddPolicy("AdminPolicy", policy =>
+         policy.RequireRole("Admin"));
+    options.AddPolicy("CitizenPolicy", policy =>
+         policy.RequireRole("Citizen"));
 });
+
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
+{
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+})
+.AddRoles<IdentityRole<Guid>>()
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
 
 builder.Services.Configure<EmailSettings>(
     builder.Configuration.GetSection("EmailSettings")

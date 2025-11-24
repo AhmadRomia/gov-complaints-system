@@ -11,8 +11,6 @@ using Domain.Entities;
 using Application.Common.Features.ComplsintUseCase;
 using Application.Common.Behaviors;
 using MediatR;
-using Application.Common.Mappings;
-using Application.Common.Models;
 
 namespace Infrastructure
 {
@@ -23,27 +21,10 @@ namespace Infrastructure
             IConfiguration configuration)
         {
 
-            services.AddScoped<AuditableEntityInterceptor>();
 
 
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(
-                    configuration.GetConnectionString("DefaultConnection"),
-                    sql => sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)
-                ));
 
-            services.AddScoped<IApplicationDbContext>(provider =>
-                provider.GetRequiredService<ApplicationDbContext>()
-            );
 
-            services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
-            {
-                options.Password.RequiredLength = 6;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequireUppercase = false;
-            })
-            .AddEntityFrameworkStores<ApplicationDbContext>()
-            .AddDefaultTokenProviders();
 
             services.AddScoped<JwtTokenService>();
 
@@ -53,6 +34,10 @@ namespace Infrastructure
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ExceptionBehavior<,>));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
+
+
+            services.AddScoped<RoleManager<IdentityRole<Guid>>>();
+            services.AddScoped<UserManager<ApplicationUser>>();
 
 
             services.AddAutoMapper(cfg => { }, typeof(Application.AssemblyReference).Assembly);
