@@ -6,7 +6,6 @@ obj/
 *.log
 *.db
 appsettings*.Local.json
-**/migrations/
 .idea/
 *.swp
 .env

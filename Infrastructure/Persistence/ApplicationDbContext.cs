@@ -1,4 +1,5 @@
 ﻿using Application.Common.Interfaces;
+using Domain.Common;
 using Domain.Entities;
 using Infrastructure.Persistence.Interceptors;
 using Microsoft.AspNetCore.Identity;
@@ -8,22 +9,29 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence
 {
-    public class ApplicationDbContext :  IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IApplicationDbContext
+    public class ApplicationDbContext
+            : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IApplicationDbContext
     {
         private readonly AuditableEntityInterceptor _auditableInterceptor;
 
         public ApplicationDbContext(
             DbContextOptions<ApplicationDbContext> options,
-            AuditableEntityInterceptor auditableInterceptor
-        ) : base(options)
+            AuditableEntityInterceptor auditableInterceptor)
+            : base(options)
         {
             _auditableInterceptor = auditableInterceptor;
         }
+
+        public DbSet<Complaint> Complaints { get; set; }
+        public DbSet<GovernmentEntity> GovernmentEntities { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
+            builder.Ignore<BaseEvent>();
+
+            
             builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         }
 
@@ -34,6 +42,8 @@ namespace Infrastructure.Persistence
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
+
+
             return await base.SaveChangesAsync(cancellationToken);
         }
     }

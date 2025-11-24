@@ -11,8 +11,6 @@ using Domain.Entities;
 using Application.Common.Features.ComplsintUseCase;
 using Application.Common.Behaviors;
 using MediatR;
-using Application.Common.Mappings;
-using Application.Common.Models;
 
 namespace Infrastructure
 {
@@ -22,28 +20,26 @@ namespace Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
-
             services.AddScoped<AuditableEntityInterceptor>();
+            services.AddDbContext<ApplicationDbContext>((sp, options) =>
+            {
+                var interceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
 
-
-            services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(
                     configuration.GetConnectionString("DefaultConnection"),
                     sql => sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)
-                ));
+                );
+
+                options.AddInterceptors(interceptor);
+            });
 
             services.AddScoped<IApplicationDbContext>(provider =>
-                provider.GetRequiredService<ApplicationDbContext>()
-            );
+                provider.GetRequiredService<ApplicationDbContext>());
 
-            services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
-            {
-                options.Password.RequiredLength = 6;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequireUppercase = false;
-            })
-            .AddEntityFrameworkStores<ApplicationDbContext>()
-            .AddDefaultTokenProviders();
+
+
+
+
 
             services.AddScoped<JwtTokenService>();
 
@@ -55,7 +51,11 @@ namespace Infrastructure
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
 
 
-            services.AddAutoMapper(cfg => { }, typeof(Application.AssemblyReference).Assembly);
+            services.AddScoped<RoleManager<IdentityRole<Guid>>>();
+            services.AddScoped<UserManager<ApplicationUser>>();
+
+
+            services.AddAutoMapper(typeof(Application.AssemblyReference).Assembly);
 
 
 
@@ -67,6 +67,10 @@ namespace Infrastructure
             services.AddScoped<IOtpService, OtpService>();
 
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
+            services.AddScoped<IFileService, FileService>();
+
+
 
 
             return services;

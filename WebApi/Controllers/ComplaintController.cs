@@ -1,48 +1,88 @@
 ﻿using Application.Common.Features.ComplsintUseCase.DTOs;
 using Application.Common.Features.ComplsintUseCase;
+using Application.Common.Features.ComplsintUseCase.Commands;
+using Application.Common.Features.ComplsintUseCase.Queries;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
+using System.Text.Json;
+using Domain.Entities;
+using MediatR;
 
 namespace WebApi.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ComplaintController : ControllerBase
     {
-        private readonly IComplaintService _service;
+        private readonly IMediator _mediator;
 
-        public ComplaintController(IComplaintService service)
+        public ComplaintController(IMediator mediator)
         {
-            _service = service;
+            _mediator = mediator;
         }
 
         [HttpGet]
+        [Authorize(Policy = "AgencyPolicy")]
         public async Task<IActionResult> GetAll() =>
-            Ok(await _service.GetAllAsync());
+            Ok(await _mediator.Send(new GetAllComplaintsQuery()));
+
+        [HttpGet("by-entity/{entityId}")]
+        [Authorize(Policy = "AgencyPolicy")]
+        public async Task<IActionResult> GetByEntity(Guid entityId) =>
+            Ok(await _mediator.Send(new GetComplaintsByEntityQuery(entityId)));
 
         [HttpGet("{id}")]
+        [Authorize(Policy = "CitizenPolicy")]
         public async Task<IActionResult> GetById(Guid id) =>
-            Ok(await _service.GetByIdAsync(id));
+            Ok(await _mediator.Send(new GetComplaintByIdQuery(id)));
 
         [HttpPost]
-        public async Task<IActionResult> Create(ComplaintCreateDto dto) =>
-            Ok(await _service.CreateAsync(dto));
+        [Authorize(Policy = "CitizenPolicy")]
+        [RequestSizeLimit(104_857_600)] // 100 MB
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Create([FromForm] ComplaintCreateDto dto, [FromForm] List<IFormFile>? attachments)
+        {
+            var result = await _mediator.Send(new CreateComplaintCommand(dto, attachments));
+            return Ok(result);
+        }
+
+        [HttpGet("track/{reference}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> TrackByReference(string reference)
+        {
+            var result = await _mediator.Send(new GetComplaintByReferenceQuery(reference));
+            return result is null ? NotFound() : Ok(result);
+        }
 
         [HttpPut]
+        [Authorize(Policy = "AgencyPolicy")]
         public async Task<IActionResult> Update(ComplaintUpdateDto dto)
         {
-            await _service.UpdateAsync(dto);
+            var r = await _mediator.Send(new UpdateComplaintCommand(dto));
             return Ok();
         }
 
+        [HttpPut("status")]
+        [Authorize(Policy = "AgencyPolicy")]
+        public async Task<IActionResult> SetStatus([FromBody] SetComplaintStatusDto dto)
+        {
+            var result = await _mediator.Send(new SetComplaintStatusCommand(dto.Id, dto.Status, dto.AgencyNotes, dto.AdditionalInfoRequest));
+            return Ok(result);
+        }
+
         [HttpDelete("{id}")]
+        [Authorize(Policy = "AdminPolicy")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _service.DeleteAsync(id);
+            var r = await _mediator.Send(new DeleteComplaintCommand(id));
             return Ok();
         }
 
         [HttpGet("paged")]
+        [Authorize(Policy = "AgencyPolicy")]
         public async Task<IActionResult> GetPaged([FromQuery] int page = 1, int size = 10) =>
-            Ok(await _service.GetPagedAsync(page, size));
+            Ok(await _mediator.Send(new GetPagedComplaintsQuery(page, size)));
     }
 }

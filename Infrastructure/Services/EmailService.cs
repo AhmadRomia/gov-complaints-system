@@ -18,10 +18,20 @@ namespace Infrastructure.Services
 
         public async Task SendEmailAsync(string to, string subject, string body)
         {
+            if (string.IsNullOrWhiteSpace(to))
+                throw new ArgumentException("Recipient email 'to' must be provided", nameof(to));
+            if (string.IsNullOrWhiteSpace(_settings.From))
+                throw new InvalidOperationException("Email 'From' address is not configured");
+
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("Government System", _settings.From));
-            message.To.Add(new MailboxAddress(to, to));
-            message.Subject = subject;
+            // Parse addresses to validate format and avoid nulls
+            var fromAddress = MailboxAddress.Parse(_settings.From);
+            message.From.Add(new MailboxAddress("Government System", fromAddress.Address));
+
+            var toAddress = MailboxAddress.Parse(to);
+            message.To.Add(new MailboxAddress(toAddress.Name ?? toAddress.Address, toAddress.Address));
+
+            message.Subject = subject ?? string.Empty;
 
             message.Body = new TextPart("html")
             {
@@ -30,9 +40,21 @@ namespace Infrastructure.Services
 
             using var client = new SmtpClient();
 
-            await client.ConnectAsync(_settings.Host, _settings.Port, _settings.EnableSsl);
+            var socketOptions = _settings.Port switch
+            {
+                587 => MailKit.Security.SecureSocketOptions.StartTls,
+                465 => MailKit.Security.SecureSocketOptions.SslOnConnect,
+                _ => _settings.EnableSsl
+                        ? MailKit.Security.SecureSocketOptions.Auto
+                        : MailKit.Security.SecureSocketOptions.None
+            };
 
-            await client.AuthenticateAsync(_settings.UserName, _settings.Password);
+            await client.ConnectAsync(_settings.Host, _settings.Port, socketOptions);
+
+            if (!string.IsNullOrWhiteSpace(_settings.UserName) && !string.IsNullOrWhiteSpace(_settings.Password))
+            {
+                await client.AuthenticateAsync(_settings.UserName, _settings.Password);
+            }
 
             await client.SendAsync(message);
 
