@@ -9,5 +9,8 @@ namespace Domain.Entities
         public DateTime? OtpExpiresAt { get; set; }
         public bool IsVerified { get; set; }
         public bool IsActive { get; set; }
+
+        public Guid? GovernmentEntityId { get; set; }
+        public GovernmentEntity? GovernmentEntity { get; set; }
     }
 }

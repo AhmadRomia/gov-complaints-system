@@ -59,6 +59,7 @@ namespace Application.Common.Features.Auth.Commands
                 return new AuthResponseDto { Success = false, Message = "Invalid OTP code" };
             }
 
+                
             user.IsVerified = true;
             user.OtpCode = null;
             user.OtpExpiresAt = null;

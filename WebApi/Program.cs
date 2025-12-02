@@ -1,6 +1,8 @@
+using Application;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Domain.Entities;
+using Infrastructure;
 using Infrastructure.Data;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Interceptors;
@@ -14,73 +16,85 @@ using WebApi.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+var configuration = builder.Configuration;
+
+// -------------------- Add Application + Infrastructure --------------------
+
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(configuration);
+
+// Bind strongly-typed settings
+builder.Services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+
+// -------------------- Controllers & Swagger --------------------
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
 
-
-builder.Services.Configure<EmailSettings>(
-    builder.Configuration.GetSection("EmailSettings"));
-
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-
-builder.Services.AddTransient<IDateTimeService, DateTimeService>();
-builder.Services.AddScoped<AuditableEntityInterceptor>();
-
-builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
+builder.Services.AddSwaggerGen(options =>
 {
-    var interceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Enter 'Bearer' + JWT token"
+    });
 
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        sql => sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)
-    );
-
-    options.AddInterceptors(interceptor);
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            }, new List<string>()
+        }
+    });
 });
 
+// -------------------- CORS --------------------
 
-
-
-var key = builder.Configuration["Jwt:Key"];
-
-var jwtSection = builder.Configuration.GetSection("Jwt");
-builder.Services.Configure<JwtSettings>(jwtSection);
-var jwtSettings = jwtSection.Get<JwtSettings>();
-
-builder.Services.AddAuthentication(options =>
+builder.Services.AddCors(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
+
+// -------------------- JWT --------------------
+
+builder.Services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
+var jwt = configuration.GetSection("Jwt").Get<JwtSettings>();
+
+builder.Services.AddAuthentication(opt =>
+{
+    opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddJwtBearer(options =>
+.AddJwtBearer(opt =>
 {
-    var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
-    options.TokenValidationParameters = new TokenValidationParameters
+    opt.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidIssuer = jwt.Issuer,
         ValidateAudience = true,
         ValidAudience = jwt.Audience,
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
+        IssuerSigningKey =
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
 });
 
-// Add Authorization + Roles support
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("AdminPolicy", policy =>
-         policy.RequireRole("Admin"));
-    options.AddPolicy("CitizenPolicy", policy =>
-         policy.RequireRole("Citizen"));
-});
-
+// -------------------- Identity --------------------
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 {
@@ -88,35 +102,51 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
 })
-.AddRoles<IdentityRole<Guid>>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-builder.Services.Configure<EmailSettings>(
-    builder.Configuration.GetSection("EmailSettings")
-);
+// -------------------- Current User + Middlewares --------------------
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
 builder.Services.AddTransient<ErrorHandlerMiddleware>();
+
+// -------------------- Authorization Policies --------------------
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("AgencyPolicy", policy => policy.RequireRole("Agency"));
+    options.AddPolicy("CitizenPolicy", policy => policy.RequireRole("Citizen"));
+});
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+// -------------------- Database Seed Roles --------------------
+
 using (var scope = app.Services.CreateScope())
 {
-    await RoleSeeder.SeedRolesAsync(scope.ServiceProvider);
+    await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
 }
+
+// -------------------- HTTP Pipeline --------------------
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+app.UseStaticFiles();
+
+app.UseCors("AllowAll");
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-
 app.UseMiddleware<ErrorHandlerMiddleware>();
+
 app.MapControllers();
 
 app.Run();

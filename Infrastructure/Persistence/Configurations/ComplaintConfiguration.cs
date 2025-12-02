@@ -1,6 +1,7 @@
 ﻿using Domain.Entities;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
+using Infrastructure.Persistence.Converters;
 
 
 namespace Infrastructure.Persistence.Configurations
@@ -18,6 +19,11 @@ namespace Infrastructure.Persistence.Configurations
             builder.Property(x => x.Status)
                 .HasMaxLength(50)
                 .IsRequired();
+
+            builder.Property(x => x.Attachments)
+                .HasConversion(new AttachmentListConverter())
+                .HasColumnType("nvarchar(max)");
+
         }
     }
 }

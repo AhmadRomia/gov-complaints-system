@@ -20,6 +20,21 @@ namespace Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
+            services.AddScoped<AuditableEntityInterceptor>();
+            services.AddDbContext<ApplicationDbContext>((sp, options) =>
+            {
+                var interceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
+
+                options.UseSqlServer(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    sql => sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)
+                );
+
+                options.AddInterceptors(interceptor);
+            });
+
+            services.AddScoped<IApplicationDbContext>(provider =>
+                provider.GetRequiredService<ApplicationDbContext>());
 
 
 
@@ -40,7 +55,7 @@ namespace Infrastructure
             services.AddScoped<UserManager<ApplicationUser>>();
 
 
-            services.AddAutoMapper(cfg => { }, typeof(Application.AssemblyReference).Assembly);
+            services.AddAutoMapper(typeof(Application.AssemblyReference).Assembly);
 
 
 
@@ -52,6 +67,10 @@ namespace Infrastructure
             services.AddScoped<IOtpService, OtpService>();
 
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
+            services.AddScoped<IFileService, FileService>();
+
+
 
 
             return services;

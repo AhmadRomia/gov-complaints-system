@@ -1,4 +1,7 @@
 ﻿using Domain.Common;
+using Domain.Enums;
+using Domain.ValueObjects;
+using System.ComponentModel.DataAnnotations.Schema;
 
 
 namespace Domain.Entities
@@ -8,8 +11,20 @@ namespace Domain.Entities
         public string Title { get; set; }
         public string Description { get; set; }
         public int Severity { get; set; }
-        public string Status { get; set; } = "Pending";
+        public ComplaintStatus Status { get; set; } = ComplaintStatus.New;
 
         public Guid CitizenId { get; set; }
+        public string? ReferenceNumber { get; set; }
+        public ComplaintType Type { get; set; }
+        public string? Location { get; set; }
+        public List<Attachment> Attachments { get; set; } = new();
+
+        public Guid? GovernmentEntityId { get; set; }
+        public GovernmentEntity? GovernmentEntity { get; set; }
+
+        // Notes added by agency staff while processing the complaint
+        public string? AgencyNotes { get; set; }
+        // When agency requests more info from citizen, can store a short message
+        public string? AdditionalInfoRequest { get; set; }
     }
 }
