@@ -131,11 +131,11 @@ using (var scope = app.Services.CreateScope())
 
 // -------------------- HTTP Pipeline --------------------
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
 app.UseStaticFiles();
 
 app.UseCors("AllowAll");
