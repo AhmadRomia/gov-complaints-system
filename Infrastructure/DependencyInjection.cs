@@ -11,6 +11,7 @@ using Domain.Entities;
 using Application.Common.Features.ComplsintUseCase;
 using Application.Common.Behaviors;
 using MediatR;
+using Application.Common.Features.Admin;
 
 namespace Infrastructure
 {
@@ -64,6 +65,7 @@ namespace Infrastructure
             services.AddTransient<IDateTimeService, DateTimeService>();
 
             services.AddScoped<IComplaintService, ComplaintService>();
+            services.AddScoped<IAgencyService, AgencyService>();
             services.AddScoped<IOtpService, OtpService>();
 
             services.AddScoped<IEmailService, EmailService>();

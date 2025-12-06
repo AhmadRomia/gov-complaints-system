@@ -17,6 +17,8 @@
     <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="9.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.11" />
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="9.0.11" />
+
+    <Folder Include="Common\Features\Admin\Commands\" />
   </ItemGroup>
 
 </Project>

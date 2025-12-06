@@ -187,7 +187,7 @@ namespace Infrastructure.Repositories
                     query = query.Include(include.Trim());
                 }
             }
-            return await query.FirstOrDefaultAsync(filter);
+            return await query.AsNoTracking().FirstOrDefaultAsync(filter);
         }
 
         public async Task<bool> AnyAsync(Expression<Func<T, bool>> filter)
@@ -203,6 +203,12 @@ namespace Infrastructure.Repositories
             if (filter != null) query = query.Where(filter);
             return await query.CountAsync();
         }
+
+        public async Task<T?> GetByIdAsNoTrackingAsync(Expression<Func<T, bool>> filter = null)
+        {
+            return await _dbSet.AsNoTracking().FirstOrDefaultAsync(filter);
+        }
+
 
         #endregion
 

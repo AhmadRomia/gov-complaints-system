@@ -37,5 +37,12 @@ namespace WebApi.Controllers
             var result = await _mediator.Send(new ConfirmOtpCommand(dto));
             return Ok(result);
         }
+
+        [HttpPost("resend-otp")]
+        public async Task<IActionResult> ResendOtp(ResendOtpDto dto)
+        {
+            var result = await _mediator.Send(new ResendOtpCommand(dto));
+            return Ok(result);
+        }
     }
 }
