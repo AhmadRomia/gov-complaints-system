@@ -43,15 +43,17 @@ namespace Infrastructure.Services
             await _repository.DeleteAsync(entity);
         }
 
-        public async Task<TDetails> GetByIdAsync(Guid id)
+        public async Task<TDetails> GetByIdAsync(Guid id,string includes = null)
         {
-            var entity = await _repository.FirstOrDefaultAsync(x => EF.Property<Guid>(x, "Id") == id);
+            var entity = await _repository.FirstOrDefaultAsync(x => EF.Property<Guid>(x, "Id") == id,includes);
             return _mapper.Map<TDetails>(entity);
         }
 
-        public async Task<List<TList>> GetAllAsync(Expression<Func<TEntity, bool>> filter = null)
+        public async Task<List<TList>> GetAllAsync(Expression<Func<TEntity, bool>> filter = null,
+            
+            string includes = null)
         {
-            var data = await _repository.GetAllAsNoTrackingAsync(filter);
+            var data = await _repository.GetAllAsNoTrackingAsync(filter,null,includes);
             return _mapper.Map<List<TList>>(data);
         }
 

@@ -204,7 +204,7 @@ namespace Infrastructure.Repositories
             return await query.CountAsync();
         }
 
-        public async Task<T?> GetByIdAsNoTrackingAsync(Expression<Func<T, bool>> filter = null)
+        public async Task<T?> GetNoTrackingAsync(Expression<Func<T, bool>> filter = null)
         {
             return await _dbSet.AsNoTracking().FirstOrDefaultAsync(filter);
         }

@@ -1,28 +1,59 @@
 using Application.Common.Features.ComplsintUseCase.DTOs;
+using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.Identity;
 
 namespace Application.Common.Features.ComplsintUseCase.Queries
 {
     public record GetAllComplaintsQuery() : IRequest<List<ComplaintListDto>>;
 
-    public class GetAllComplaintsQueryHandler : IRequestHandler<GetAllComplaintsQuery, List<ComplaintListDto>>
+    public class GetAllComplaintsQueryHandler
+    : IRequestHandler<GetAllComplaintsQuery, List<ComplaintListDto>>
     {
-        private readonly IRepository<Complaint> _repository;
+        private readonly IComplaintService _complaintService;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly IMapper _mapper;
+        private readonly ICurrentUserService _currentUser;
 
-        public GetAllComplaintsQueryHandler(IRepository<Complaint> repository, IMapper mapper)
+        public GetAllComplaintsQueryHandler(
+            IComplaintService complaintService,
+            UserManager<ApplicationUser> userManager,
+            IMapper mapper,
+            ICurrentUserService currentUser)
         {
-            _repository = repository;
+            _complaintService = complaintService;
+            _userManager = userManager;
             _mapper = mapper;
+            _currentUser = currentUser;
         }
 
         public async Task<List<ComplaintListDto>> Handle(GetAllComplaintsQuery request, CancellationToken cancellationToken)
         {
-            var all = await _repository.GetAllAsync();
-            return _mapper.Map<List<ComplaintListDto>>(all);
+            var userId = _currentUser.UserId
+                         ?? throw new BadRequestException("User not authenticated");
+
+            var userGuid = userId;
+
+            var user = await _userManager.FindByIdAsync(userGuid.ToString())
+                       ?? throw new BadRequestException("User not found");
+
+            if (!await _userManager.IsInRoleAsync(user, "Agency"))
+                throw new BadRequestException("Only agency users can list complaints");
+
+            if (user.GovernmentEntityId == null)
+                throw new BadRequestException("User has no associated government entity");
+
+            var govEntityId = user.GovernmentEntityId.Value;
+
+            var complaints = await _complaintService.GetAllAsync(
+                c => c.GovernmentEntityId == govEntityId);
+
+            return _mapper.Map<List<ComplaintListDto>>(complaints);
         }
     }
+
+
 }

@@ -1,28 +1,67 @@
 using Application.Common.Features.ComplsintUseCase.DTOs;
+using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.Identity;
 
 namespace Application.Common.Features.ComplsintUseCase.Queries
 {
     public record GetComplaintByIdQuery(Guid Id) : IRequest<ComplaintDetailsDto>;
 
-    public class GetComplaintByIdQueryHandler : IRequestHandler<GetComplaintByIdQuery, ComplaintDetailsDto>
+    public class GetComplaintByIdQueryHandler
+        : IRequestHandler<GetComplaintByIdQuery, ComplaintDetailsDto>
     {
-        private readonly IRepository<Complaint> _repository;
+        private readonly IComplaintService _complaintService;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly IMapper _mapper;
+        private readonly ICurrentUserService _currentUser;
 
-        public GetComplaintByIdQueryHandler(IRepository<Complaint> repository, IMapper mapper)
+        public GetComplaintByIdQueryHandler(
+            IComplaintService complaintService,
+            UserManager<ApplicationUser> userManager,
+            IMapper mapper,
+            ICurrentUserService currentUser)
         {
-            _repository = repository;
+            _complaintService = complaintService;
+            _userManager = userManager;
             _mapper = mapper;
+            _currentUser = currentUser;
         }
 
         public async Task<ComplaintDetailsDto> Handle(GetComplaintByIdQuery request, CancellationToken cancellationToken)
         {
-            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == request.Id);
+            //if (!_currentUser.IsAuthenticated)
+            //    throw new BadRequestException("User not authenticated");
+
+            var userGuid = _currentUser.UserId ?? throw new BadRequestException("User context is missing");
+
+            var entity = await _complaintService.GetByIdAsync(request.Id)
+                         ?? throw new BadRequestException("Complaint not found");
+
+            if (await _userManager.IsInRoleAsync(await _userManager.FindByIdAsync(userGuid.ToString()), "Citizen"))
+            {
+                if (entity.CitizenId != userGuid)
+                    throw new BadRequestException("Access denied to this complaint");
+            }
+            else if (await _userManager.IsInRoleAsync(await _userManager.FindByIdAsync(userGuid.ToString()), "Agency"))
+            {
+                var user = await _userManager.FindByIdAsync(userGuid.ToString());
+                if (user == null || user.GovernmentEntityId == null)
+                    throw new BadRequestException("Access denied");
+
+                if (entity.GovernmentEntityId != user.GovernmentEntityId)
+                    throw new BadRequestException("Access denied to this complaint");
+            }
+            else
+            {
+                throw new BadRequestException("Access denied");
+            }
+
             return _mapper.Map<ComplaintDetailsDto>(entity);
         }
     }
+
+
 }

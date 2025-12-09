@@ -12,14 +12,13 @@ namespace Application.Common.Features.ComplsintUseCase.Mapping
         public ComplaintProfile()
         {
             CreateMap<ComplaintCreateDto, Complaint>()
-                .ForMember(d => d.Type, opt => opt.MapFrom(s => MapType(s.Type)))
                 .ForMember(d => d.Status, opt => opt.MapFrom(_ => ComplaintStatus.New));
 
-            CreateMap<ComplaintUpdateDto, Complaint>()
-                .ForMember(d => d.Status, opt => opt.MapFrom(s => MapStatus(s.Status)));
+            CreateMap<ComplaintUpdateDto, Complaint>();
+            CreateMap<ComplaintUpdateDto, ComplaintDetailsDto>().ReverseMap();
 
             CreateMap<Complaint, ComplaintListDto>()
-                .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()));
+                .ForMember(d => d.GovernmentEntityName, opt => opt.MapFrom(s => s.GovernmentEntity.Name));
 
             CreateMap<Domain.ValueObjects.Attachment, AttachmentDto>();
 
