@@ -57,7 +57,6 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// CORS ?????? ?? Swagger UI ?????? Authorization header
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSwagger", policy =>
@@ -68,7 +67,6 @@ builder.Services.AddCors(options =>
     );
 });
 
-// JWT Configuration
 builder.Services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
 var jwt = configuration.GetSection("Jwt").Get<JwtSettings>();
 
@@ -85,8 +83,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero,
-        };
 
+            // ??? ????: ???? ?? ?????? RequireRole ?????? ?????? ????? ???????
+            RoleClaimType = ClaimTypes.Role,          // ?? "role" ?? ??? ?????? ???? ?????
+            NameClaimType = ClaimTypes.NameIdentifier // ???????? ??? ?? ??????
+        };
 
         options.Events = new JwtBearerEvents
         {
@@ -124,6 +125,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// ?????? ????? ????? ?????? ????????? ?????:
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+});
 // Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 {

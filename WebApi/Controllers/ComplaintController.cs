@@ -4,6 +4,8 @@ using Application.Common.Features.ComplsintUseCase.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Data;
 
 namespace WebApi.Controllers
 {
@@ -19,27 +21,35 @@ namespace WebApi.Controllers
         }
 
         [HttpGet]
-        //[Authorize(Policy = "AgencyPolicy")]
-        public async Task<IActionResult> GetAll() =>
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Agency")]
+        public async Task<IActionResult> GetAllForAgency() =>
             Ok(await _mediator.Send(new GetAllComplaintsQuery()));
 
         [HttpGet("by-entity/{entityId}")]
-        //[Authorize(Policy = "AgencyPolicy")]
-        public async Task<IActionResult> GetByEntity(Guid entityId) =>
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,Roles = "Citizen")]
+        public async Task<IActionResult> GetByEntityForAdmin(Guid entityId) =>
             Ok(await _mediator.Send(new GetComplaintsByEntityQuery(entityId)));
 
         [HttpGet("{id}")]
-        //[Authorize(Policy = "CitizenPolicy")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> GetById(Guid id) =>
             Ok(await _mediator.Send(new GetComplaintByIdQuery(id)));
 
         [HttpPost]
-        //[Authorize(Policy = "CitizenPolicy")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Citizen")]
         [RequestSizeLimit(104_857_600)] 
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Create([FromForm] ComplaintCreateDto dto, [FromForm] List<IFormFile>? attachments)
         {
             var result = await _mediator.Send(new CreateComplaintCommand(dto, attachments));
+            return Ok(result);
+        }
+
+        [HttpGet("my")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Citizen")]
+        public async Task<IActionResult> GetMyComplaints()
+        {
+            var result = await _mediator.Send(new GetMyComplaintsQuery());
             return Ok(result);
         }
 
@@ -52,15 +62,15 @@ namespace WebApi.Controllers
         }
 
         [HttpPut]
-        //[Authorize(Policy = "AgencyPolicy")]
-        public async Task<IActionResult> Update(ComplaintUpdateDto dto)
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,Roles = "Citizen")]
+        public async Task<IActionResult> Update([FromForm]ComplaintUpdateDto dto ,[FromForm] List<IFormFile>? attachments)
         {
-            var r = await _mediator.Send(new UpdateComplaintCommand(dto));
+            var r = await _mediator.Send(new UpdateMyComplaintCommand(dto,attachments));
             return Ok();
         }
 
         [HttpPut("status")]
-        //[Authorize(Policy = "AgencyPolicy")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Citizen")]
         public async Task<IActionResult> SetStatus([FromBody] SetComplaintStatusDto dto)
         {
             var result = await _mediator.Send(new SetComplaintStatusCommand(dto.Id, dto.Status, dto.AgencyNotes, dto.AdditionalInfoRequest));
@@ -69,6 +79,7 @@ namespace WebApi.Controllers
 
         [HttpDelete("{id}")]
         //[Authorize(Policy = "AdminPolicy")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> Delete(Guid id)
         {
             var r = await _mediator.Send(new DeleteComplaintCommand(id));

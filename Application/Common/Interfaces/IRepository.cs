@@ -9,7 +9,7 @@ namespace Application.Common.Interfaces
     public interface IRepository<T> where T : class
     {
 
-        Task<T?> GetByIdAsNoTrackingAsync(Expression<Func<T, bool>> filter = null);
+        Task<T?> GetNoTrackingAsync(Expression<Func<T, bool>> filter = null);
         Task<IReadOnlyList<T>> GetAllAsync(
             Expression<Func<T, bool>> filter = null,
             Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,

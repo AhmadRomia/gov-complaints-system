@@ -15,8 +15,8 @@ namespace Application.Common.Models
         Task UpdateAsync(TUpdate dto);
         Task DeleteAsync(Guid id);
 
-        Task<TDetails> GetByIdAsync(Guid id);
-        Task<List<TList>> GetAllAsync(Expression<Func<TEntity, bool>> filter = null);
+        Task<TDetails> GetByIdAsync(Guid id, string includes = null);
+        Task<List<TList>> GetAllAsync(Expression<Func<TEntity, bool>> filter = null, string includes = null);
         Task<PagingResult<TList>> GetPagedAsync(int page, int pageSize,
             Expression<Func<TEntity, bool>> filter = null);
 
