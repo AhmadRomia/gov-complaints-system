@@ -8,6 +8,8 @@ namespace Domain.Entities
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Name { get; set; }
 
+        public string? LogoUrl { get; set; }
+
         public ICollection<ApplicationUser> Employees { get; set; } = new List<ApplicationUser>();
         public ICollection<Complaint> Complaints { get; set; } = new List<Complaint>();
     }

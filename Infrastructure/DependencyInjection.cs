@@ -65,6 +65,7 @@ namespace Infrastructure
             services.AddTransient<IDateTimeService, DateTimeService>();
 
             services.AddScoped<IComplaintService, ComplaintService>();
+            // Complaint actions will be saved inside ComplaintService, no separate service required
             services.AddScoped<IAgencyService, AgencyService>();
             services.AddScoped<IOtpService, OtpService>();
 

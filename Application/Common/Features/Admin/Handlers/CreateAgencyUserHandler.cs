@@ -26,7 +26,8 @@ namespace Application.Common.Features.Admin.Handlers
                 UserName = dto.Email,
                 GovernmentEntityId = dto.GovernmentEntityId,
                 IsVerified = true,
-                IsActive = true
+                IsActive = true,
+                UserRole = Domain.Enums.UserRoleEnum.Agency
             };
 
             var result = await _userManager.CreateAsync(user, dto.Password);

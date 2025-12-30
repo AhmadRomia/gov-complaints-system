@@ -73,7 +73,8 @@ namespace Application.Common.Features.Auth.Commands
                 Message = "OTP confirmed successfully",
                 Token = token,
                 UserId = user.Id.ToString(),
-                Email = user.Email
+                Email = user.Email,
+                UserRole = user.UserRole,
             };
         }
     }

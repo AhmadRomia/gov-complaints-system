@@ -12,13 +12,19 @@ namespace Application.Common.Features.ComplsintUseCase.DTOs
         public int Severity { get; set; }
         public ComplaintStatus Status { get; set; }
         public Guid CitizenId { get; set; }
-        public string ReferenceNumber { get; set; }
+        public required string ReferenceNumber { get; set; }
         public ComplaintType Type { get; set; } = default!;
         public Guid? GovernmentEntityId { get; set; }
-        public string Location { get; set; } = default!;
+       public decimal LocationLong { get; set; }
+
+        public decimal LocationLat { get; set; }
+
+        public SyrianGovernorate Governorate { get; set; }
         public string? AgencyNotes { get; set; }
         public string? AdditionalInfoRequest { get; set; }
         public List<AttachmentDto> Attachments { get; set; } = new();
+
+        public Guid? LockedBy { get; set; }
         public byte[] RowVersion { get; set; } = Array.Empty<byte>();
     }
 

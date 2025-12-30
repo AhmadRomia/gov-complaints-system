@@ -176,11 +176,18 @@ var app = builder.Build();
 // Database seeding
 using (var scope = app.Services.CreateScope())
 {
-    await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
+    try
+    {
+        await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Database seeding failed. Continuing without seeding to allow diagnostics.");
+    }
 }
     app.UseSwagger();
     app.UseSwaggerUI();
-
 
 app.UseStaticFiles();
 

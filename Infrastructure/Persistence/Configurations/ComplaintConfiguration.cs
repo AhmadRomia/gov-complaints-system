@@ -24,6 +24,11 @@ namespace Infrastructure.Persistence.Configurations
                 .HasConversion(new AttachmentListConverter())
                 .HasColumnType("nvarchar(max)");
 
+            // configure actions navigation
+            builder.HasMany(c => c.Actions)
+                   .WithOne(a => a.Complaint)
+                   .HasForeignKey(a => a.ComplaintId)
+                   .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

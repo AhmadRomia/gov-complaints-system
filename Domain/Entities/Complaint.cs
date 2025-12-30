@@ -8,15 +8,20 @@ namespace Domain.Entities
 {
     public class Complaint : BaseAuditableEntity
     {
-        public string Title { get; set; }
-        public string Description { get; set; }
+
+        public required string Title { get; set; }
+        public string? Description { get; set; }
         public int Severity { get; set; }
         public ComplaintStatus Status { get; set; } = ComplaintStatus.New;
 
         public Guid CitizenId { get; set; }
+
+        public ApplicationUser? Citizen { get; set; } 
         public string? ReferenceNumber { get; set; }
         public ComplaintType Type { get; set; }
-        public string? Location { get; set; }
+        public decimal LocationLong { get; set; }
+
+        public decimal LocationLat { get; set; }
         public List<Attachment> Attachments { get; set; } = new();
 
         public Guid? GovernmentEntityId { get; set; }
@@ -26,5 +31,13 @@ namespace Domain.Entities
         public string? AgencyNotes { get; set; }
         // When agency requests more info from citizen, can store a short message
         public string? AdditionalInfoRequest { get; set; }
+
+
+        public SyrianGovernorate Governorate { get; set; }
+
+        public Guid? LockedBy { get; set;  }
+
+        // Actions log
+        public List<ComplaintAction> Actions { get; set; } = new();
     }
 }

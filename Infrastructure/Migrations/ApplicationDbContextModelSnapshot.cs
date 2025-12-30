@@ -133,6 +133,9 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<int>("UserRole")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GovernmentEntityId");
@@ -148,11 +151,43 @@ namespace Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.ComplaintAction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ActionType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ComplaintId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("IssuerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComplaintId");
+
+                    b.ToTable("ComplaintActions", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.GovernmentEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -313,14 +348,22 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("GovernmentEntityId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Location")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Governorate")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("LocationLat")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("LocationLong")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("LockedBy")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ReferenceNumber")
                         .HasColumnType("nvarchar(max)");
@@ -340,6 +383,8 @@ namespace Infrastructure.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
+                    b.HasIndex("CitizenId");
+
                     b.HasIndex("GovernmentEntityId");
 
                     b.ToTable("Complaints", (string)null);
@@ -353,6 +398,17 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("GovernmentEntity");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ComplaintAction", b =>
+                {
+                    b.HasOne("Domain.Entities.Complaint", "Complaint")
+                        .WithMany("Actions")
+                        .HasForeignKey("ComplaintId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Complaint");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -408,6 +464,12 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Complaint", b =>
                 {
+                    b.HasOne("Domain.Entities.ApplicationUser", "Citizen")
+                        .WithMany()
+                        .HasForeignKey("CitizenId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Domain.Entities.GovernmentEntity", "GovernmentEntity")
                         .WithMany("Complaints")
                         .HasForeignKey("GovernmentEntityId")
@@ -419,6 +481,8 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Citizen");
+
                     b.Navigation("GovernmentEntity");
                 });
 
@@ -427,6 +491,11 @@ namespace Infrastructure.Migrations
                     b.Navigation("Complaints");
 
                     b.Navigation("Employees");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Complaint", b =>
+                {
+                    b.Navigation("Actions");
                 });
 #pragma warning restore 612, 618
         }

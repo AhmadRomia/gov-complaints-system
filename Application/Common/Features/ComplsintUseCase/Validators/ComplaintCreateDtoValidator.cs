@@ -28,9 +28,7 @@ namespace Application.Common.Features.ComplsintUseCase.Validators
             RuleFor(x => x.GovernmentEntityId)
                 .NotNull().WithMessage("Government entity is required");
 
-            RuleFor(x => x.Location)
-                .NotEmpty().WithMessage("Location is required")
-                .MaximumLength(300).WithMessage("Location must not exceed 300 characters");
+     
         }
     }
 }

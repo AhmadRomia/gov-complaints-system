@@ -102,6 +102,7 @@ namespace Infrastructure.Repositories
                     query = query.Include(include.Trim());
                 }
             }
+          
             if (filter != null) query = query.Where(filter);
             if (orderBy != null) query = orderBy(query);
             return await query.ToListAsync();

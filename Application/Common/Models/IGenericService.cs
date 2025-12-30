@@ -16,10 +16,14 @@ namespace Application.Common.Models
         Task DeleteAsync(Guid id);
 
         Task<TDetails> GetByIdAsync(Guid id, string includes = null);
-        Task<List<TList>> GetAllAsync(Expression<Func<TEntity, bool>> filter = null, string includes = null);
-        Task<PagingResult<TList>> GetPagedAsync(int page, int pageSize,
-            Expression<Func<TEntity, bool>> filter = null);
-
+        Task<List<TList>> GetAllAsync(
+      Expression<Func<TEntity, bool>> filter = null,
+      Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
+      string includes = null);
+        Task<PagingResult<TList>> GetPagedAsync(
+             int page, int pageSize,
+               Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
+             Expression<Func<TEntity, bool>> filter = null);
         Task<bool> AnyAsync(Expression<Func<TEntity, bool>> filter);
 
         Task<int> CountAsync(Expression<Func<TEntity, bool>> filter = null);

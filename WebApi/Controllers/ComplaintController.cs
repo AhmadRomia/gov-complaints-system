@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Data;
+using Domain.Enums;
 
 namespace WebApi.Controllers
 {
@@ -21,9 +22,13 @@ namespace WebApi.Controllers
         }
 
         [HttpGet]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Agency")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Agency,Admin")]
         public async Task<IActionResult> GetAllForAgency() =>
             Ok(await _mediator.Send(new GetAllComplaintsQuery()));
+
+
+
+        
 
         [HttpGet("by-entity/{entityId}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,Roles = "Citizen")]
@@ -70,7 +75,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPut("status")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Citizen")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Agency,Admin")]
         public async Task<IActionResult> SetStatus([FromBody] SetComplaintStatusDto dto)
         {
             var result = await _mediator.Send(new SetComplaintStatusCommand(dto.Id, dto.Status, dto.AgencyNotes, dto.AdditionalInfoRequest));
@@ -87,8 +92,26 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("paged")]
-        //[Authorize(Policy = "AgencyPolicy")]
-        public async Task<IActionResult> GetPaged([FromQuery] int page = 1, int size = 10) =>
-            Ok(await _mediator.Send(new GetPagedComplaintsQuery(page, size)));
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Agency,Admin")]
+        public async Task<IActionResult> GetPaged([FromQuery] int page = 1, int size = 10, [FromQuery] Guid? agencyId = null, [FromQuery] ComplaintStatus? complaintStatus = null) =>
+            Ok(await _mediator.Send(new GetPagedComplaintsQuery(page, size, agencyId, complaintStatus)));
+
+        // New endpoints for taking and releasing ownership
+        [HttpPut("take-ownership/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Agency")]
+        public async Task<IActionResult> TakeOwnership(Guid id)
+        {
+            var result = await _mediator.Send(new TakeOwnerShipCommand(id));
+            return Ok(result);
+        }
+
+        [HttpPut("release-ownership/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Agency")]
+        public async Task<IActionResult> ReleaseOwnership(Guid id)
+        {
+            var result = await _mediator.Send(new ReleaseOwnerShipCommand(id));
+            return Ok(result);
+        }
+
     }
 }

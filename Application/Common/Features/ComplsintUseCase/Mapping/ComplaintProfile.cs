@@ -18,14 +18,23 @@ namespace Application.Common.Features.ComplsintUseCase.Mapping
             CreateMap<ComplaintUpdateDto, ComplaintDetailsDto>().ReverseMap();
 
             CreateMap<Complaint, ComplaintListDto>()
-                .ForMember(d => d.GovernmentEntityName, opt => opt.MapFrom(s => s.GovernmentEntity.Name));
+      .ForMember(d => d.GovernmentEntityName,
+          opt => opt.MapFrom(s => s.GovernmentEntity != null ? s.GovernmentEntity.Name : null))
+
+      .ForMember(d => d.CitizenName,
+          opt => opt.MapFrom(s => s.Citizen != null ? s.Citizen.FullName : null))
+
+      .ForMember(d => d.CitizenPhoneNumber,
+          opt => opt.MapFrom(s => s.Citizen != null ? s.Citizen.PhoneNumber : null))
+
+      .ForMember(d => d.CitizenEmail,
+          opt => opt.MapFrom(s => s.Citizen != null ? s.Citizen.Email : null));
+            ;
 
             CreateMap<Domain.ValueObjects.Attachment, AttachmentDto>();
 
-            CreateMap<Complaint, ComplaintDetailsDto>()
-                .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()))
-                .ForMember(d => d.Type, opt => opt.MapFrom(s => s.Type.ToString()))
-                .ForMember(d => d.Attachments, opt => opt.MapFrom(s => s.Attachments));
+            // Map enums directly (was incorrectly mapping to string)
+            CreateMap<Complaint, ComplaintDetailsDto>();
         }
 
         private static ComplaintType MapType(string type)

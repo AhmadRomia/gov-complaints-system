@@ -54,10 +54,7 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
                 if (entity.GovernmentEntityId != user.GovernmentEntityId)
                     throw new BadRequestException("Access denied to this complaint");
             }
-            else
-            {
-                throw new BadRequestException("Access denied");
-            }
+           
 
             return _mapper.Map<ComplaintDetailsDto>(entity);
         }

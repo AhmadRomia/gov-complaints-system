@@ -13,10 +13,10 @@ namespace Application.Common.Features.ComplsintUseCase
     {
         Task<ComplaintDetailsDto> CreateWithFilesAsync(ComplaintCreateDto dto, List<Microsoft.AspNetCore.Http.IFormFile>? attachments);
         Task<ComplaintDetailsDto?> GetByReferenceAsync(string referenceNumber);
-        Task<ComplaintDetailsDto> SetStatusAsync(Guid id, ComplaintStatus status, string? agencyNotes, string? additionalInfoRequest);
-        Task<ComplaintDetailsDto> UpdateWithFilesAsync(
-    Complaint complaint,
-    ComplaintUpdateDto dto,
-    List<IFormFile>? newFiles);
+        Task<ComplaintDetailsDto> SetStatusAsync(Guid id,Guid userId, ComplaintStatus status, string? agencyNotes, string? additionalInfoRequest);
+        Task<ComplaintDetailsDto> UpdateWithFilesAsync(Complaint complaint,ComplaintUpdateDto dto,List<IFormFile>? newFiles);
+
+        Task <ComplaintDetailsDto> TakeOwnerShip(Guid id,Guid userId);
+        Task<ComplaintDetailsDto> ReleasOwnerShip(Guid id, Guid userId);
     }
 }

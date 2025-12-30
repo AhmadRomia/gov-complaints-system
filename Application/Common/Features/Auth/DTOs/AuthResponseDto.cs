@@ -1,5 +1,7 @@
 ﻿
 
+using Domain.Enums;
+
 namespace Application.Common.Features.Auth.DTOs
 {
     public class AuthResponseDto
@@ -9,6 +11,8 @@ namespace Application.Common.Features.Auth.DTOs
         public string Email { get; set; }
         public bool Success { get; set; }
         public string? Message { get; set; }
+
+        public UserRoleEnum  UserRole { get; set; }
     }
 
 }

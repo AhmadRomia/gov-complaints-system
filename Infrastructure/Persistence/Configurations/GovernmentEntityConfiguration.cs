@@ -15,6 +15,8 @@ namespace Infrastructure.Persistence.Configurations
                    .IsRequired()
                    .HasMaxLength(200);
 
+            builder.Property(x => x.LogoUrl)
+                   .HasMaxLength(500);
 
             builder.HasMany(e => e.Complaints)
                    .WithOne(c => c.GovernmentEntity)

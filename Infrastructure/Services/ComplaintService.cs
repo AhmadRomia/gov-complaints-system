@@ -1,5 +1,6 @@
-﻿using Application.Common.Features.ComplsintUseCase.DTOs;
+﻿using Application.Common.Exceptions;
 using Application.Common.Features.ComplsintUseCase;
+using Application.Common.Features.ComplsintUseCase.DTOs;
 using Application.Common.Interfaces;
 using AutoMapper;
 using Domain.Entities;
@@ -15,11 +16,13 @@ namespace Infrastructure.Services
           IComplaintService
     {
         private readonly IFileService _fileService;
+        private readonly IRepository<ComplaintAction> _actionRepository;
 
-        public ComplaintService(IRepository<Complaint> repository, IMapper mapper, IFileService fileService)
+        public ComplaintService(IRepository<Complaint> repository, IMapper mapper, IFileService fileService, IRepository<ComplaintAction> actionRepository)
             : base(repository, mapper)
         {
             _fileService = fileService;
+            _actionRepository = actionRepository;
         }
         public async Task<ComplaintDetailsDto> UpdateWithFilesAsync(
     Complaint complaint,
@@ -29,7 +32,8 @@ namespace Infrastructure.Services
             complaint.Title = dto.Title;
             complaint.Description = dto.Description;
             complaint.Severity = dto.Severity;
-            complaint.Location = dto.Location;
+            complaint.LocationLat = dto.LocationLat;
+            complaint.LocationLong= dto.LocationLong;
             complaint.Type = dto.Type;
             complaint.GovernmentEntityId = dto.GovernmentEntityId;
 
@@ -87,20 +91,103 @@ namespace Infrastructure.Services
             return entity is null ? null : _mapper.Map<ComplaintDetailsDto>(entity);
         }
 
-        public async Task<ComplaintDetailsDto> SetStatusAsync(Guid id, ComplaintStatus status, string? agencyNotes, string? additionalInfoRequest)
+        public async Task<ComplaintDetailsDto> SetStatusAsync(Guid id,Guid userId, ComplaintStatus status, string? agencyNotes, string? additionalInfoRequest)
         {
 
 
-            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id) ?? throw new Exception("Complaint not found");
+            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id) ?? throw new BadRequestException("Complaint not found");
+
+            if(entity.LockedBy!= userId)
+                throw new BadRequestException("You do not own the lock on this complaint");
 
             if (!AllowedTransitions.TryGetValue(entity.Status, out var allowed) || !allowed.Contains(status))
                 throw new Exception("Invalid status transition");
+
+            var previousStatus = entity.Status;
 
             entity.Status = status;
             entity.AgencyNotes = agencyNotes ?? entity.AgencyNotes;
             entity.AdditionalInfoRequest = additionalInfoRequest ?? entity.AdditionalInfoRequest;
 
             await _repository.UpdateAsync(entity);
+
+            // record action: status changed
+            await _actionRepository.AddAsync(new ComplaintAction
+            {
+                ComplaintId = entity.Id,
+                ActionType = ActionType.StatusChanged,
+                IssuerId = userId,
+                Description = $"Status changed from {previousStatus} to {status}"
+            });
+
+            // record agency notes action if provided
+            if (!string.IsNullOrWhiteSpace(agencyNotes))
+            {
+                await _actionRepository.AddAsync(new ComplaintAction
+                {
+                    ComplaintId = entity.Id,
+                    ActionType = ActionType.AgencyNotesAdded,
+                    IssuerId = userId,
+                    Description = agencyNotes
+                });
+            }
+
+            // record additional info request action if provided
+            if (!string.IsNullOrWhiteSpace(additionalInfoRequest))
+            {
+                await _actionRepository.AddAsync(new ComplaintAction
+                {
+                    ComplaintId = entity.Id,
+                    ActionType = ActionType.AdditionalInfoRequested,
+                    IssuerId = userId,
+                    Description = additionalInfoRequest
+                });
+            }
+
+            return _mapper.Map<ComplaintDetailsDto>(entity);
+        }
+
+
+        public async Task<ComplaintDetailsDto> TakeOwnerShip(Guid id,Guid userId)
+        {
+            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id) ?? throw new Exception("Complaint not found");
+            if(entity.LockedBy !=null)
+                throw new BadRequestException("Complaint is already locked");
+
+            entity.LockedBy = userId;
+            await _repository.UpdateAsync(entity);
+
+            await _actionRepository.AddAsync(new ComplaintAction
+            {
+                ComplaintId = entity.Id,
+                ActionType = ActionType.TakenOwnership,
+                IssuerId = userId,
+                Description = "Taken ownership"
+            });
+
+            return _mapper.Map<ComplaintDetailsDto>(entity);
+        }
+
+        public async Task<ComplaintDetailsDto> ReleasOwnerShip(Guid id, Guid userId)
+        {
+            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id) ?? throw new Exception("Complaint not found");
+            if (entity.LockedBy == null)
+                throw new BadRequestException("Complaint is not locked");
+
+            if(entity.LockedBy != userId)
+                throw new BadRequestException("You do not own the lock on this complaint");
+
+            entity.LockedBy = null;
+            await _repository.UpdateAsync(entity);
+
+            await _actionRepository.AddAsync(new ComplaintAction
+            {
+                ComplaintId = entity.Id,
+                ActionType = ActionType.ReleasedOwnership,
+                IssuerId = userId,
+                Description = "Released ownership"
+            });
+
             return _mapper.Map<ComplaintDetailsDto>(entity);
         }
 
@@ -114,14 +201,16 @@ namespace Infrastructure.Services
 
         private string GenerateReference()
         {
-            var date = DateTime.UtcNow.ToString("yyyyMMdd");
+           
             var rand = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
                 .Replace("+", "")
                 .Replace("/", "")
                 .Replace("=", "")
                 .Substring(0, 6)
                 .ToUpperInvariant();
-            return $"CMP-{date}-{rand}";
+            return $"CMP-{rand}";
         }
+
+      
     }
 }

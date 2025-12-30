@@ -25,7 +25,8 @@ namespace Application.Common.Features.Admin.Handlers
             if (exists)
                 throw new BadRequestException("Agency with the same name already exists");
 
-            return await _service.CreateAsync(new AgencyCreateDto { Name = name });
+            var createDto = new AgencyCreateDto { Name = name, LogoUrl = request.Dto.LogoUrl };
+            return await _service.CreateAsync(createDto);
         }
     }
 }

@@ -8,8 +8,10 @@ namespace Application.Common.Mappings
     {
         public AgencyProfile()
         {
-            CreateMap<GovernmentEntity, AgencyDto>();
-            CreateMap<AgencyCreateDto, GovernmentEntity>();
+            CreateMap<GovernmentEntity, AgencyDto>()
+                .ForMember(d => d.Name, opt => opt.MapFrom(s => s.Name));
+            CreateMap<AgencyCreateDto, GovernmentEntity>()
+                .ForMember(d => d.LogoUrl, opt => opt.MapFrom(s => s.LogoUrl));
             CreateMap<AgencyUpdateDto, GovernmentEntity>();
         }
     }

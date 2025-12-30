@@ -25,7 +25,8 @@ namespace Infrastructure.Services
             {
                 FullName = dto.FullName,
                 Email = dto.Email,
-                UserName = dto.Email
+                UserName = dto.Email,
+                UserRole = dto.UserRole
             };
 
             var result = await _userManager.CreateAsync(user, dto.Password);
@@ -37,6 +38,7 @@ namespace Infrastructure.Services
             {
                 UserId = user.Id.ToString(),
                 Email = user.Email,
+                UserRole = user.UserRole,
                 Token =await _jwt.GenerateTokenAsync(user)
             };
         }
@@ -54,6 +56,7 @@ namespace Infrastructure.Services
             {
                 UserId = user.Id.ToString(),
                 Email = user.Email,
+                UserRole = user.UserRole,
                 Token =await _jwt.GenerateTokenAsync(user)
             };
         }

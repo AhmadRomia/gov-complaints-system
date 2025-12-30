@@ -20,6 +20,7 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
 
         public GetAllComplaintsQueryHandler(
             IComplaintService complaintService,
+         
             UserManager<ApplicationUser> userManager,
             IMapper mapper,
             ICurrentUserService currentUser)
@@ -40,17 +41,27 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
             var user = await _userManager.FindByIdAsync(userGuid.ToString())
                        ?? throw new BadRequestException("User not found");
 
-            if (!await _userManager.IsInRoleAsync(user, "Agency"))
-                throw new BadRequestException("Only agency users can list complaints");
+            if(!await _userManager.IsInRoleAsync(user, "Agency") && !await _userManager.IsInRoleAsync(user, "Admin"))
+            {
+                throw new BadRequestException("Only agency users and admin can list complaints");
 
-            if (user.GovernmentEntityId == null)
-                throw new BadRequestException("User has no associated government entity");
+            }
 
-            var govEntityId = user.GovernmentEntityId.Value;
+            List<ComplaintListDto> complaints=new();
+            if (await _userManager.IsInRoleAsync(user, "Agency"))
+            {
+                if (user.GovernmentEntityId == null)
+                    throw new BadRequestException("User has no associated government entity");
+                var govEntityId = user.GovernmentEntityId.Value;
 
-            var complaints = await _complaintService.GetAllAsync(
-                c => c.GovernmentEntityId == govEntityId);
+                complaints = await _complaintService.GetAllAsync( c => c.GovernmentEntityId == govEntityId, orderBy: q => q.OrderByDescending(c => c.CreatedAt), includes: "GovernmentEntity,Citizen");
+            }
+             if (await _userManager.IsInRoleAsync(user, "Admin"))
+            {
+                complaints = await _complaintService.GetAllAsync(orderBy: q => q.OrderByDescending(c => c.CreatedAt), includes: "GovernmentEntity,Citizen");
+            }
 
+           
             return _mapper.Map<List<ComplaintListDto>>(complaints);
         }
     }

@@ -49,16 +49,18 @@ namespace Infrastructure.Services
             return _mapper.Map<TDetails>(entity);
         }
 
-        public async Task<List<TList>> GetAllAsync(Expression<Func<TEntity, bool>> filter = null,
-            
-            string includes = null)
+        public async Task<List<TList>> GetAllAsync(
+      Expression<Func<TEntity, bool>> filter = null,
+      Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
+      string includes = null)
         {
-            var data = await _repository.GetAllAsNoTrackingAsync(filter,null,includes);
+            var data = await _repository.GetAllAsNoTrackingAsync(filter, orderBy, includes);
             return _mapper.Map<List<TList>>(data);
         }
 
         public async Task<PagingResult<TList>> GetPagedAsync(
             int page, int pageSize,
+              Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
             Expression<Func<TEntity, bool>> filter = null)
         {
             var result = await _repository.GetPagedAsync(page, pageSize, filter);
