@@ -23,7 +23,8 @@ namespace Application.Common.Models
         Task<PagingResult<TList>> GetPagedAsync(
              int page, int pageSize,
                Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
-             Expression<Func<TEntity, bool>> filter = null);
+             Expression<Func<TEntity, bool>> filter = null,
+             params Expression<Func<TEntity, object>>[] includes);
         Task<bool> AnyAsync(Expression<Func<TEntity, bool>> filter);
 
         Task<int> CountAsync(Expression<Func<TEntity, bool>> filter = null);

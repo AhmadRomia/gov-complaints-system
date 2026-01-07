@@ -37,7 +37,7 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
 
             var userGuid = _currentUser.UserId ?? throw new BadRequestException("User context is missing");
 
-            var entity = await _complaintService.GetByIdAsync(request.Id)
+            var entity = await _complaintService.GetByIdAsync(request.Id, "AgencyNotes,AdditionalInfoRequests")
                          ?? throw new BadRequestException("Complaint not found");
 
             if (await _userManager.IsInRoleAsync(await _userManager.FindByIdAsync(userGuid.ToString()), "Citizen"))

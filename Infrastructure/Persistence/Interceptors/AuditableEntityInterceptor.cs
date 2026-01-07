@@ -27,22 +27,34 @@ namespace Infrastructure.Persistence.Interceptors
             return base.SavingChanges(eventData, result);
         }
 
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            ApplyAuditing(eventData.Context);
+            return base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+
         private void ApplyAuditing(DbContext? context)
         {
             if (context == null) return;
+
+            var userId = _currentUser.UserId?.ToString();
+            var now = _dateService.UtcNow;
 
             foreach (var entry in context.ChangeTracker.Entries<BaseAuditableEntity>())
             {
                 if (entry.State == EntityState.Added)
                 {
-                    entry.Entity.CreatedAt = _dateService.UtcNow;
-                    entry.Entity.CreatedBy = _currentUser.UserId.ToString();
+                    entry.Entity.CreatedAt = now;
+                    entry.Entity.CreatedBy = userId;
                 }
 
                 if (entry.State == EntityState.Modified)
                 {
-                    entry.Entity.UpdatedAt = _dateService.UtcNow;
-                    entry.Entity.UpdatedBy = _currentUser.UserId.ToString();
+                    entry.Entity.UpdatedAt = now;
+                    entry.Entity.UpdatedBy = userId;
                 }
             }
         }

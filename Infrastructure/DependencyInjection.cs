@@ -12,6 +12,7 @@ using Application.Common.Features.ComplsintUseCase;
 using Application.Common.Behaviors;
 using MediatR;
 using Application.Common.Features.Admin;
+using Application.Notifier.Core.Firebase;
 
 namespace Infrastructure
 {
@@ -21,6 +22,7 @@ namespace Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
+            services.AddMemoryCache();
             services.AddScoped<AuditableEntityInterceptor>();
             services.AddDbContext<ApplicationDbContext>((sp, options) =>
             {
@@ -72,6 +74,7 @@ namespace Infrastructure
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IJwtTokenService, JwtTokenService>();
             services.AddScoped<IFileService, FileService>();
+            services.AddScoped<IFirebaseCoreService, FirebaseCoreService>();
 
 
 

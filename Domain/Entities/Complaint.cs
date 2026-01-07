@@ -28,9 +28,9 @@ namespace Domain.Entities
         public GovernmentEntity? GovernmentEntity { get; set; }
 
         // Notes added by agency staff while processing the complaint
-        public string? AgencyNotes { get; set; }
+        public ICollection<AgencyNote> AgencyNotes { get; set; } = new List<AgencyNote>();
         // When agency requests more info from citizen, can store a short message
-        public string? AdditionalInfoRequest { get; set; }
+        public ICollection<AdditionalInfoRequest> AdditionalInfoRequests { get; set; } = new List<AdditionalInfoRequest>();
 
 
         public SyrianGovernorate Governorate { get; set; }

@@ -36,7 +36,7 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
             var userGuid = _currentUser.UserId ?? throw new BadRequestException("User context is missing");
 
             var complaints = await _complaintService.GetAllAsync(
-                c => c.CitizenId == userGuid , includes : "GovernmentEntity");
+                c => c.CitizenId == userGuid , includes : "GovernmentEntity, Citizen");
 
             return _mapper.Map<List<ComplaintListDto>>(complaints);
         }

@@ -4,6 +4,7 @@ using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using MediatR;
 using Domain.Enums;
+using Application.Notifier.Core.Firebase;
 
 namespace Application.Common.Features.ComplsintUseCase.Commands
 {
@@ -11,13 +12,16 @@ namespace Application.Common.Features.ComplsintUseCase.Commands
 
     public class SetComplaintStatusCommandHandler : IRequestHandler<SetComplaintStatusCommand, ComplaintDetailsDto>
     {
+        private readonly IFirebaseCoreService _firebaseCoreService;
+
         private readonly IComplaintService _service;
         private readonly ICurrentUserService _currentUser;
 
-        public SetComplaintStatusCommandHandler(IComplaintService service, ICurrentUserService currentUser)
+        public SetComplaintStatusCommandHandler(IComplaintService service, ICurrentUserService currentUser,IFirebaseCoreService firebaseCoreService)
         {
             _service = service;
             _currentUser = currentUser;
+            _firebaseCoreService = firebaseCoreService;
         }
 
         public async Task<ComplaintDetailsDto> Handle(SetComplaintStatusCommand request, CancellationToken cancellationToken)
@@ -26,7 +30,12 @@ namespace Application.Common.Features.ComplsintUseCase.Commands
                 throw new BadRequestException("Only agency users can set status");
 
             var userId = _currentUser.UserId;
-            return await _service.SetStatusAsync(request.Id,userId.Value, request.Status, request.AgencyNotes, request.AdditionalInfoRequest);
+
+            var response= await _service.SetStatusAsync(request.Id,userId.Value, request.Status, request.AgencyNotes, request.AdditionalInfoRequest);
+
+           
+            return response;
+
         }
     }
 }

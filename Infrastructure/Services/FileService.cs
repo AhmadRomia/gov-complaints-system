@@ -1,4 +1,5 @@
 ﻿using Application.Common.Interfaces;
+using Application.Common.Exceptions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 
@@ -17,18 +18,17 @@ namespace Infrastructure.Services
 
         public async Task<string> SaveAsync(IFormFile file, string folder = "attachments")
         {
-            if (_env.WebRootPath is null)
-                throw new Exception("WebRootPath not found");
+            var webRootPath = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
 
             if (file.Length > 20 * 1024 * 1024)
-                throw new Exception("File too large");
+                throw new BadRequestException("File too large");
 
             var ext = Path.GetExtension(file.FileName).ToLower();
 
             if (!_allowedExtensions.Contains(ext))
-                throw new Exception("File type not allowed");
+                throw new BadRequestException("File type not allowed. Allowed types: jpg, jpeg, png, pdf");
 
-            var rootPath = Path.Combine(_env.WebRootPath, folder);
+            var rootPath = Path.Combine(webRootPath, folder);
 
             if (!Directory.Exists(rootPath))
                 Directory.CreateDirectory(rootPath);
@@ -46,7 +46,8 @@ namespace Infrastructure.Services
 
         public async Task DeleteAsync(string fileUrl)
         {
-            var fullPath = Path.Combine(_env.WebRootPath, fileUrl.TrimStart('/'));
+            var webRootPath = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+            var fullPath = Path.Combine(webRootPath, fileUrl.TrimStart('/'));
 
             if (File.Exists(fullPath))
                 File.Delete(fullPath);
@@ -56,7 +57,8 @@ namespace Infrastructure.Services
 
         public bool Exists(string fileUrl)
         {
-            var fullPath = Path.Combine(_env.WebRootPath, fileUrl.TrimStart('/'));
+            var webRootPath = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+            var fullPath = Path.Combine(webRootPath, fileUrl.TrimStart('/'));
             return File.Exists(fullPath);
         }
     }

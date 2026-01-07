@@ -9,10 +9,13 @@ namespace Application.Common.Features.Admin.Handlers
     public class UpdateAgencyHandler : IRequestHandler<UpdateAgencyCommand, bool>
     {
         private readonly IAgencyService _service;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
+        private const string CacheKey = "Agencies_GetAll";
 
-        public UpdateAgencyHandler(IAgencyService service)
+        public UpdateAgencyHandler(IAgencyService service, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
         {
             _service = service;
+            _cache = cache;
         }
 
         public async Task<bool> Handle(UpdateAgencyCommand request, CancellationToken cancellationToken)
@@ -33,6 +36,7 @@ namespace Application.Common.Features.Admin.Handlers
                 throw new BadRequestException("Another agency with the same name exists");
 
             await _service.UpdateAsync(new AgencyUpdateDto { Id = id, Name = name });
+            _cache.Remove(CacheKey);
             return true;
         }
     }

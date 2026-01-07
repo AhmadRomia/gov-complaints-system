@@ -1,5 +1,6 @@
 ﻿using Application.Common.Features.Users.DTOs;
 using Application.Common.Features.Users.Queries;
+using Application.Common.Models;
 using Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Application.Common.Features.Users.Handlers
 {
-    public class GetAllUsersHandler : IRequestHandler<GetAllUsersQuery, List<UserProfileDto>>
+    public class GetAllUsersHandler : IRequestHandler<GetAllUsersQuery, PagingResult<UserProfileDto>>
     {
         private readonly UserManager<ApplicationUser> _userManager;
 
@@ -16,28 +17,47 @@ namespace Application.Common.Features.Users.Handlers
             _userManager = userManager;
         }
 
-        public async Task<List<UserProfileDto>> Handle(GetAllUsersQuery request, CancellationToken cancellationToken)
+        public async Task<PagingResult<UserProfileDto>> Handle(GetAllUsersQuery request, CancellationToken cancellationToken)
         {
-            var users = _userManager.Users.ToList();
+            var query = _userManager.Users.AsQueryable();
 
-            var result = new List<UserProfileDto>();
+            // Filter by Citizen role
+            query = query.Where(u => u.UserRole == Domain.Enums.UserRoleEnum.Citizen);
 
-            foreach (var user in users)
+            // Search functionality
+            if (!string.IsNullOrWhiteSpace(request.SearchQuery))
             {
-                var roles = await _userManager.GetRolesAsync(user);
+                var search = request.SearchQuery.ToLower();
+                query = query.Where(u => 
+                    u.FullName.ToLower().Contains(search) || 
+                    u.Email.ToLower().Contains(search) || 
+                    (u.PhoneNumber != null && u.PhoneNumber.Contains(search)));
+            }
 
-                result.Add(new UserProfileDto
+            // Get total count
+            var totalCount = query.Count();
+
+            // Apply pagination
+            var users = query
+                .Skip((request.Page - 1) * request.Size)
+                .Take(request.Size)
+                .Select(user => new UserProfileDto
                 {
                     Id = user.Id,
                     FullName = user.FullName,
                     Email = user.Email,
                     PhoneNumber = user.PhoneNumber,
                     IsVerified = user.IsVerified,
-                    Role = roles.FirstOrDefault()
-                });
-            }
+                    Role = user.UserRole.ToString(),
+                    IsActive = user.IsActive
+                })
+                .ToList();
 
-            return result;
+            return new PagingResult<UserProfileDto>
+            {
+                Data = users,
+                Count = totalCount
+            };
         }
     }
 }

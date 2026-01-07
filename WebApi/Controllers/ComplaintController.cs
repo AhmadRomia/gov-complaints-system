@@ -113,5 +113,21 @@ namespace WebApi.Controllers
             return Ok(result);
         }
 
+        [HttpPost("{id}/notes")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Agency")]
+        public async Task<IActionResult> AddAgencyNote(Guid id, [FromBody] AddAgencyNoteRequestDto dto)
+        {
+            var result = await _mediator.Send(new AddAgencyNoteCommand(id, dto.Note));
+            return Ok(result);
+        }
+
+        [HttpPost("{id}/request-info")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Agency")]
+        public async Task<IActionResult> RequestAdditionalInfo(Guid id, [FromBody] RequestAdditionalInfoRequestDto dto)
+        {
+            var result = await _mediator.Send(new RequestAdditionalInfoCommand(id, dto.RequestMessage));
+            return Ok(result);
+        }
+
     }
 }

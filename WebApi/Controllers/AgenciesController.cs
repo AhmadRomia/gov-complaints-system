@@ -17,7 +17,8 @@ namespace WebApi.Controllers
         }
 
         [HttpGet]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Citizen")]
+       
+     
         public async Task<IActionResult> GetAll()
         {
             var result = await _mediator.Send(new Application.Common.Features.Admin.Queries.GetAgenciesQuery());

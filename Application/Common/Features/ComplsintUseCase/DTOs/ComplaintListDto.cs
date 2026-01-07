@@ -7,6 +7,8 @@ namespace Application.Common.Features.ComplsintUseCase.DTOs
     public class ComplaintListDto
     {
         public Guid Id { get; set; }
+
+        public string ReferenceNumber { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
         public ComplaintStatus Status { get; set; }
@@ -21,9 +23,15 @@ namespace Application.Common.Features.ComplsintUseCase.DTOs
         public SyrianGovernorate Governorate { get; set; }
         public decimal LocationLong { get; set; }
         public decimal LocationLat { get; set; }
+
+        
+        public List<AgencyNoteDto> AgencyNotes { get; set; } = new();
+      
+        public List<AdditionalInfoRequestDto> AdditionalInfoRequests { get; set; } = new();
         public DateTime CreatedAt { get; set; }
 
         public Guid? LockedBy { get; set; }
+        
     }
 
 

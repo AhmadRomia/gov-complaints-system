@@ -31,7 +31,6 @@ namespace Infrastructure.Repositories
             if (entity == null) throw new ArgumentNullException(nameof(entity));
             _dbSet.Add(entity);
             await SaveChangesWithRetryAsync();
-            await _context.Entry(entity).ReloadAsync();
             return entity;
         }
 
@@ -55,16 +54,30 @@ namespace Infrastructure.Repositories
         public virtual async Task UpdateAsync(T entity)
         {
             if (entity == null) throw new ArgumentNullException(nameof(entity));
-            _dbSet.Update(entity);
+            
+            var entry = _context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                _dbSet.Update(entity);
+            }
+            
             await SaveChangesWithRetryAsync();
-            await _context.Entry(entity).ReloadAsync();
         }
 
         public virtual async Task UpdateRangeAsync(IEnumerable<T> entities)
         {
             var list = entities.ToList();
             if (!list.Any()) return;
-            _dbSet.UpdateRange(list);
+            
+            foreach (var entity in list)
+            {
+                var entry = _context.Entry(entity);
+                if (entry.State == EntityState.Detached)
+                {
+                    _dbSet.Update(entity);
+                }
+            }
+            
             await SaveChangesWithRetryAsync();
             foreach (var e in list)
                 await _context.Entry(e).ReloadAsync();
@@ -188,7 +201,7 @@ namespace Infrastructure.Repositories
                     query = query.Include(include.Trim());
                 }
             }
-            return await query.AsNoTracking().FirstOrDefaultAsync(filter);
+            return await query.FirstOrDefaultAsync(filter);
         }
 
         public async Task<bool> AnyAsync(Expression<Func<T, bool>> filter)
@@ -254,6 +267,11 @@ namespace Infrastructure.Repositories
 
         #endregion
 
+
+        public Task SaveChangesAsync()
+        {
+            return _context.SaveChangesAsync();
+        }
         #region Helpers
 
         private static IQueryable<T> IncludeLambda(IQueryable<T> query, params Expression<Func<T, object>>[] propertySelectors)

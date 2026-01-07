@@ -55,6 +55,52 @@ namespace Infrastructure.Migrations
                     b.UseTptMappingStrategy();
                 });
 
+            modelBuilder.Entity("Domain.Entities.AdditionalInfoRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ComplaintId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RequestMessage")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComplaintId");
+
+                    b.ToTable("AdditionalInfoRequests");
+                });
+
+            modelBuilder.Entity("Domain.Entities.AgencyNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ComplaintId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComplaintId");
+
+                    b.ToTable("AgencyNotes");
+                });
+
             modelBuilder.Entity("Domain.Entities.ApplicationUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -334,12 +380,6 @@ namespace Infrastructure.Migrations
                 {
                     b.HasBaseType("Domain.Common.BaseAuditableEntity");
 
-                    b.Property<string>("AdditionalInfoRequest")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AgencyNotes")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Attachments")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -372,13 +412,11 @@ namespace Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("Status")
-                        .HasMaxLength(50)
                         .HasColumnType("int");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
@@ -388,6 +426,28 @@ namespace Infrastructure.Migrations
                     b.HasIndex("GovernmentEntityId");
 
                     b.ToTable("Complaints", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.AdditionalInfoRequest", b =>
+                {
+                    b.HasOne("Domain.Entities.Complaint", "Complaint")
+                        .WithMany("AdditionalInfoRequests")
+                        .HasForeignKey("ComplaintId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Complaint");
+                });
+
+            modelBuilder.Entity("Domain.Entities.AgencyNote", b =>
+                {
+                    b.HasOne("Domain.Entities.Complaint", "Complaint")
+                        .WithMany("AgencyNotes")
+                        .HasForeignKey("ComplaintId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Complaint");
                 });
 
             modelBuilder.Entity("Domain.Entities.ApplicationUser", b =>
@@ -496,6 +556,10 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.Complaint", b =>
                 {
                     b.Navigation("Actions");
+
+                    b.Navigation("AdditionalInfoRequests");
+
+                    b.Navigation("AgencyNotes");
                 });
 #pragma warning restore 612, 618
         }

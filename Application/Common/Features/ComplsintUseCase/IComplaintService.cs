@@ -18,5 +18,8 @@ namespace Application.Common.Features.ComplsintUseCase
 
         Task <ComplaintDetailsDto> TakeOwnerShip(Guid id,Guid userId);
         Task<ComplaintDetailsDto> ReleasOwnerShip(Guid id, Guid userId);
+
+        Task<ComplaintDetailsDto> AddAgencyNote(Guid id, Guid userId, string note);
+        Task<ComplaintDetailsDto> RequestAdditionalInfo(Guid id, Guid userId, string infoRequest);
     }
 }

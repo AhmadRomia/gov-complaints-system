@@ -8,7 +8,7 @@ namespace Application.Common.Interfaces
 {
     public interface IRepository<T> where T : class
     {
-
+        Task SaveChangesAsync();
         Task<T?> GetNoTrackingAsync(Expression<Func<T, bool>> filter = null);
         Task<IReadOnlyList<T>> GetAllAsync(
             Expression<Func<T, bool>> filter = null,

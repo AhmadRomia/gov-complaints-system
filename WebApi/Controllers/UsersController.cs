@@ -35,10 +35,18 @@ namespace WebApi.Controllers
 
         [Authorize(Policy = "AdminPolicy")]
         [HttpGet("all")]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAllUsers([FromQuery] int page = 1, [FromQuery] int size = 10, [FromQuery] string? searchQuery = null)
         {
-            var users = await _mediator.Send(new GetAllUsersQuery());
+            var users = await _mediator.Send(new GetAllUsersQuery { Page = page, Size = size, SearchQuery = searchQuery });
             return Ok(users);
+        }
+
+        [Authorize(Policy = "AdminPolicy")]
+        [HttpGet("{id:guid}")]
+        public async Task<IActionResult> GetUserById(Guid id)
+        {
+            var user = await _mediator.Send(new GetUserByIdQuery(id));
+            return user != null ? Ok(user) : NotFound();
         }
 
         [Authorize(Policy = "AdminPolicy")]

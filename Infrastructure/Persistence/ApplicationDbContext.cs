@@ -25,6 +25,8 @@ namespace Infrastructure.Persistence
         public DbSet<Complaint> Complaints { get; set; }
         public DbSet<GovernmentEntity> GovernmentEntities { get; set; }
         public DbSet<ComplaintAction> ComplaintActions { get; set; }
+        public DbSet<AgencyNote> AgencyNotes { get; set; }
+        public DbSet<AdditionalInfoRequest> AdditionalInfoRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

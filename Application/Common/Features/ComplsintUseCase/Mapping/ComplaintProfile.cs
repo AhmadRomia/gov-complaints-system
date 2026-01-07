@@ -34,7 +34,11 @@ namespace Application.Common.Features.ComplsintUseCase.Mapping
             CreateMap<Domain.ValueObjects.Attachment, AttachmentDto>();
 
             // Map enums directly (was incorrectly mapping to string)
+            // Map enums directly (was incorrectly mapping to string)
             CreateMap<Complaint, ComplaintDetailsDto>();
+
+            CreateMap<AgencyNote, AgencyNoteDto>();
+            CreateMap<AdditionalInfoRequest, AdditionalInfoRequestDto>();
         }
 
         private static ComplaintType MapType(string type)

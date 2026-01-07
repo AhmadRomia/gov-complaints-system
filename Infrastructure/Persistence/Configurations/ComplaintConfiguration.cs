@@ -12,17 +12,21 @@ namespace Infrastructure.Persistence.Configurations
         {
             builder.ToTable("Complaints");
 
-            builder.Property(x => x.Title)
-                .HasMaxLength(200)
-                .IsRequired();
+            builder.HasMany(c => c.AgencyNotes)
+                   .WithOne(n => n.Complaint)
+                   .HasForeignKey(n => n.ComplaintId)
+                   .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Property(x => x.Status)
-                .HasMaxLength(50)
-                .IsRequired();
+            builder.HasMany(c => c.AdditionalInfoRequests)
+                   .WithOne(r => r.Complaint)
+                   .HasForeignKey(r => r.ComplaintId)
+                   .OnDelete(DeleteBehavior.Cascade);
 
             builder.Property(x => x.Attachments)
                 .HasConversion(new AttachmentListConverter())
                 .HasColumnType("nvarchar(max)");
+
+
 
             // configure actions navigation
             builder.HasMany(c => c.Actions)

@@ -20,8 +20,8 @@ namespace Application.Common.Features.ComplsintUseCase.DTOs
         public decimal LocationLat { get; set; }
 
         public SyrianGovernorate Governorate { get; set; }
-        public string? AgencyNotes { get; set; }
-        public string? AdditionalInfoRequest { get; set; }
+        public List<AgencyNoteDto> AgencyNotes { get; set; } = new();
+        public List<AdditionalInfoRequestDto> AdditionalInfoRequests { get; set; } = new();
         public List<AttachmentDto> Attachments { get; set; } = new();
 
         public Guid? LockedBy { get; set; }

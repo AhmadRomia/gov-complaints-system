@@ -17,12 +17,22 @@ namespace Infrastructure.Services
     {
         private readonly IFileService _fileService;
         private readonly IRepository<ComplaintAction> _actionRepository;
+        private readonly IRepository<AgencyNote> _agencyNoteRepository;
+        private readonly IRepository<AdditionalInfoRequest> _additionalInfoRepository;
 
-        public ComplaintService(IRepository<Complaint> repository, IMapper mapper, IFileService fileService, IRepository<ComplaintAction> actionRepository)
+        public ComplaintService(
+            IRepository<Complaint> repository, 
+            IMapper mapper, 
+            IFileService fileService, 
+            IRepository<ComplaintAction> actionRepository,
+            IRepository<AgencyNote> agencyNoteRepository,
+            IRepository<AdditionalInfoRequest> additionalInfoRepository)
             : base(repository, mapper)
         {
             _fileService = fileService;
             _actionRepository = actionRepository;
+            _agencyNoteRepository = agencyNoteRepository;
+            _additionalInfoRepository = additionalInfoRepository;
         }
         public async Task<ComplaintDetailsDto> UpdateWithFilesAsync(
     Complaint complaint,
@@ -95,7 +105,7 @@ namespace Infrastructure.Services
         {
 
 
-            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id) ?? throw new BadRequestException("Complaint not found");
+            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id, c => c.AgencyNotes, c => c.AdditionalInfoRequests) ?? throw new BadRequestException("Complaint not found");
 
             if(entity.LockedBy!= userId)
                 throw new BadRequestException("You do not own the lock on this complaint");
@@ -106,8 +116,16 @@ namespace Infrastructure.Services
             var previousStatus = entity.Status;
 
             entity.Status = status;
-            entity.AgencyNotes = agencyNotes ?? entity.AgencyNotes;
-            entity.AdditionalInfoRequest = additionalInfoRequest ?? entity.AdditionalInfoRequest;
+            
+            if (!string.IsNullOrWhiteSpace(agencyNotes))
+            {
+               await _agencyNoteRepository.AddAsync(new AgencyNote { Note = agencyNotes, ComplaintId = entity.Id });
+            }
+
+            if (!string.IsNullOrWhiteSpace(additionalInfoRequest))
+            {
+                await _additionalInfoRepository.AddAsync(new AdditionalInfoRequest { RequestMessage = additionalInfoRequest, ComplaintId = entity.Id });
+            }
 
             await _repository.UpdateAsync(entity);
 
@@ -144,13 +162,15 @@ namespace Infrastructure.Services
                 });
             }
 
+
+
             return _mapper.Map<ComplaintDetailsDto>(entity);
         }
 
 
         public async Task<ComplaintDetailsDto> TakeOwnerShip(Guid id,Guid userId)
         {
-            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id) ?? throw new Exception("Complaint not found");
+            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id, c => c.AgencyNotes, c => c.AdditionalInfoRequests) ?? throw new BadRequestException("Complaint not found");
             if(entity.LockedBy !=null)
                 throw new BadRequestException("Complaint is already locked");
 
@@ -170,7 +190,7 @@ namespace Infrastructure.Services
 
         public async Task<ComplaintDetailsDto> ReleasOwnerShip(Guid id, Guid userId)
         {
-            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id) ?? throw new Exception("Complaint not found");
+            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id, c => c.AgencyNotes, c => c.AdditionalInfoRequests) ?? throw new BadRequestException("Complaint not found");
             if (entity.LockedBy == null)
                 throw new BadRequestException("Complaint is not locked");
 
@@ -186,6 +206,56 @@ namespace Infrastructure.Services
                 ActionType = ActionType.ReleasedOwnership,
                 IssuerId = userId,
                 Description = "Released ownership"
+            });
+
+            return _mapper.Map<ComplaintDetailsDto>(entity);
+        }
+
+        public async Task<ComplaintDetailsDto> AddAgencyNote(Guid id, Guid userId, string note)
+        {
+            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id, c => c.AgencyNotes, c => c.AdditionalInfoRequests) ?? throw new BadRequestException("Complaint not found");
+            
+            if (entity.LockedBy != userId)
+                throw new BadRequestException("You do not own the lock on this complaint");
+
+            if (string.IsNullOrWhiteSpace(note))
+                throw new BadRequestException("Note cannot be empty");
+
+            await _agencyNoteRepository.AddAsync(new AgencyNote { Note = note, ComplaintId = entity.Id });
+
+            // No need to update the complaint entity graph anymore
+
+            await _actionRepository.AddAsync(new ComplaintAction
+            {
+                ComplaintId = entity.Id,
+                ActionType = ActionType.AgencyNotesAdded,
+                IssuerId = userId,
+                Description = note 
+            });
+
+            return _mapper.Map<ComplaintDetailsDto>(entity);
+        }
+
+        public async Task<ComplaintDetailsDto> RequestAdditionalInfo(Guid id, Guid userId, string infoRequest)
+        {
+            var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id, c => c.AgencyNotes, c => c.AdditionalInfoRequests) ?? throw new BadRequestException("Complaint not found");
+
+            if (entity.LockedBy != userId)
+                throw new BadRequestException("You do not own the lock on this complaint");
+
+            if (string.IsNullOrWhiteSpace(infoRequest))
+                throw new BadRequestException("Request info cannot be empty");
+
+            await _additionalInfoRepository.AddAsync(new AdditionalInfoRequest { RequestMessage = infoRequest, ComplaintId = entity.Id });
+            
+            // No need to update the complaint entity graph anymore
+
+            await _actionRepository.AddAsync(new ComplaintAction
+            {
+                ComplaintId = entity.Id,
+                ActionType = ActionType.AdditionalInfoRequested,
+                IssuerId = userId,
+                Description = infoRequest
             });
 
             return _mapper.Map<ComplaintDetailsDto>(entity);

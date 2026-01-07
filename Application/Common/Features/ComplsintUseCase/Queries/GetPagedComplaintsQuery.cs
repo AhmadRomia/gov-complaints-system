@@ -67,7 +67,7 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
                     filter = a => a.GovernmentEntityId == govEntityId && a.Status == status;
                 }
 
-                page = await _complaintService.GetPagedAsync(request.Page, request.Size, filter: filter, orderBy: a => a.OrderByDescending(c => c.Severity));
+                page = await _complaintService.GetPagedAsync(request.Page, request.Size, a => a.OrderByDescending(c => c.Severity), filter, c => c.AgencyNotes, c => c.AdditionalInfoRequests);
             }
             else
             {
@@ -90,10 +90,9 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
                     filter = a => a.Status == status;
                 }
 
-                page = await _complaintService.GetPagedAsync(request.Page, request.Size, filter: filter, orderBy: a => a.OrderByDescending(c => c.Severity));
+                page = await _complaintService.GetPagedAsync(request.Page, request.Size, a => a.OrderByDescending(c => c.Severity), filter, c => c.AgencyNotes, c => c.AdditionalInfoRequests);
             }
-            var complaints = page.Data; 
-            return _mapper.Map<List<ComplaintListDto>>(complaints);
+            return page.Data; 
         }
     }
 }

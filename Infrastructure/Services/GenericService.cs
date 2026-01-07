@@ -61,9 +61,10 @@ namespace Infrastructure.Services
         public async Task<PagingResult<TList>> GetPagedAsync(
             int page, int pageSize,
               Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
-            Expression<Func<TEntity, bool>> filter = null)
+            Expression<Func<TEntity, bool>> filter = null,
+            params Expression<Func<TEntity, object>>[] includes)
         {
-            var result = await _repository.GetPagedAsync(page, pageSize, filter);
+            var result = await _repository.GetPagedAsync(page, pageSize, filter, orderBy, includes);
             return new PagingResult<TList>
             {
                 Count = result.Count,

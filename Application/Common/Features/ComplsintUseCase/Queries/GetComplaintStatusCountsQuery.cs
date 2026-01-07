@@ -32,8 +32,7 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
 
             if (await _userManager.IsInRoleAsync(user, "Admin"))
             {
-                // Admin: always return global counts (ignore any supplied GovernmentEntityId)
-                request = new GetComplaintStatusCountsQuery(null);
+                
             }
             else if (await _userManager.IsInRoleAsync(user, "Agency"))
             {

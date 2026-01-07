@@ -54,11 +54,11 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
                     throw new BadRequestException("User has no associated government entity");
                 var govEntityId = user.GovernmentEntityId.Value;
 
-                complaints = await _complaintService.GetAllAsync( c => c.GovernmentEntityId == govEntityId, orderBy: q => q.OrderByDescending(c => c.CreatedAt), includes: "GovernmentEntity,Citizen");
+                complaints = await _complaintService.GetAllAsync( c => c.GovernmentEntityId == govEntityId, orderBy: q => q.OrderByDescending(c => c.CreatedAt), includes: "GovernmentEntity,Citizen,AgencyNotes,AdditionalInfoRequests");
             }
              if (await _userManager.IsInRoleAsync(user, "Admin"))
             {
-                complaints = await _complaintService.GetAllAsync(orderBy: q => q.OrderByDescending(c => c.CreatedAt), includes: "GovernmentEntity,Citizen");
+                complaints = await _complaintService.GetAllAsync(orderBy: q => q.OrderByDescending(c => c.CreatedAt), includes: "GovernmentEntity,Citizen,AgencyNotes,AdditionalInfoRequests");
             }
 
            
