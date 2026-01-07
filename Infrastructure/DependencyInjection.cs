@@ -75,6 +75,7 @@ namespace Infrastructure
             services.AddScoped<IJwtTokenService, JwtTokenService>();
             services.AddScoped<IFileService, FileService>();
             services.AddScoped<IFirebaseCoreService, FirebaseCoreService>();
+            services.AddScoped<IComplaintExportService, ComplaintExportService>();
 
 
 

@@ -43,9 +43,24 @@ public class FirebaseSettingConfig
     [JsonPropertyName("universe_domain")]
     public string UniverseDomain { get; set; } = string.Empty;
 
-    public override string ToString()
+    public string ToJson()
     {
-        string value = JsonSerializer.Serialize(this);
-        return value;
+        var fixedKey = PrivateKey.Replace("\\n", "\n");
+
+        return JsonSerializer.Serialize(new
+        {
+            type = Type,
+            project_id = ProjectId,
+            private_key_id = PrivateKeyId,
+            private_key = fixedKey,
+            client_email = ClientEmail,
+            client_id = ClientId,
+            auth_uri = AuthUri,
+            token_uri = TokenUri,
+            auth_provider_x509_cert_url = AuthProviderX509CertUrl,
+            client_x509_cert_url = ClientX509CertUrl,
+            universe_domain = UniverseDomain
+        });
     }
+
 }

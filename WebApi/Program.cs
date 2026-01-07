@@ -13,6 +13,7 @@ using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
@@ -146,15 +147,19 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("CitizenPolicy", p => p.RequireRole("Citizen"));
 });
 
-//FirebaseSettingConfig firebaseCredentials =
-//  builder.Configuration.GetSection("FirebaseSettings").Get<FirebaseSettingConfig>()!;
+var firebaseConfig = builder.Configuration
+    .GetSection("FirebaseSettings")
+    .Get<FirebaseSettingConfig>();
 
-//FirebaseApp.Create(
-//    new AppOptions()
-//    {
-//        Credential = GoogleCredential.FromJson(firebaseCredentials.ToString()),
-//    });
 
+if (firebaseConfig is null)
+    throw new Exception("FirebaseSettings not found");
+
+if (FirebaseApp.DefaultInstance == null)
+{
+    FirebaseApp.Create(new AppOptions { Credential = GoogleCredential.FromFile("service-account.json") });
+
+}
 // =======================
 // Services
 // =======================

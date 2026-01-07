@@ -34,6 +34,11 @@ namespace Infrastructure.Services
                 new Claim(ClaimTypes.Name, user.UserName ?? string.Empty)
             };
 
+            if (user.GovernmentEntityId.HasValue)
+            {
+                claims.Add(new Claim("geid", user.GovernmentEntityId.Value.ToString()));
+            }
+
             // add roles claims
             var roles = await _userManager.GetRolesAsync(user);
             foreach (var role in roles)

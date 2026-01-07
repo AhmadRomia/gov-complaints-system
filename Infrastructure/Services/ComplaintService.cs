@@ -2,11 +2,14 @@
 using Application.Common.Features.ComplsintUseCase;
 using Application.Common.Features.ComplsintUseCase.DTOs;
 using Application.Common.Interfaces;
+using Application.Notifier.Core.Firebase;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using Microsoft.AspNetCore.Http;
+using System.Text.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
 namespace Infrastructure.Services
@@ -19,13 +22,15 @@ namespace Infrastructure.Services
         private readonly IRepository<ComplaintAction> _actionRepository;
         private readonly IRepository<AgencyNote> _agencyNoteRepository;
         private readonly IRepository<AdditionalInfoRequest> _additionalInfoRepository;
+        private readonly IFirebaseCoreService _firebaseCoreService;
 
         public ComplaintService(
-            IRepository<Complaint> repository, 
-            IMapper mapper, 
-            IFileService fileService, 
+            IRepository<Complaint> repository,
+            IMapper mapper,
+            IFileService fileService,
             IRepository<ComplaintAction> actionRepository,
             IRepository<AgencyNote> agencyNoteRepository,
+            IFirebaseCoreService firebaseCoreService,
             IRepository<AdditionalInfoRequest> additionalInfoRepository)
             : base(repository, mapper)
         {
@@ -33,6 +38,7 @@ namespace Infrastructure.Services
             _actionRepository = actionRepository;
             _agencyNoteRepository = agencyNoteRepository;
             _additionalInfoRepository = additionalInfoRepository;
+            _firebaseCoreService = firebaseCoreService;
         }
         public async Task<ComplaintDetailsDto> UpdateWithFilesAsync(
     Complaint complaint,
@@ -43,7 +49,7 @@ namespace Infrastructure.Services
             complaint.Description = dto.Description;
             complaint.Severity = dto.Severity;
             complaint.LocationLat = dto.LocationLat;
-            complaint.LocationLong= dto.LocationLong;
+            complaint.LocationLong = dto.LocationLong;
             complaint.Type = dto.Type;
             complaint.GovernmentEntityId = dto.GovernmentEntityId;
 
@@ -101,13 +107,13 @@ namespace Infrastructure.Services
             return entity is null ? null : _mapper.Map<ComplaintDetailsDto>(entity);
         }
 
-        public async Task<ComplaintDetailsDto> SetStatusAsync(Guid id,Guid userId, ComplaintStatus status, string? agencyNotes, string? additionalInfoRequest)
+        public async Task<ComplaintDetailsDto> SetStatusAsync(Guid id, Guid userId, ComplaintStatus status, string? agencyNotes, string? additionalInfoRequest)
         {
 
 
             var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id, c => c.AgencyNotes, c => c.AdditionalInfoRequests) ?? throw new BadRequestException("Complaint not found");
 
-            if(entity.LockedBy!= userId)
+            if (entity.LockedBy != userId)
                 throw new BadRequestException("You do not own the lock on this complaint");
 
             if (!AllowedTransitions.TryGetValue(entity.Status, out var allowed) || !allowed.Contains(status))
@@ -116,10 +122,12 @@ namespace Infrastructure.Services
             var previousStatus = entity.Status;
 
             entity.Status = status;
-            
+
+
+
             if (!string.IsNullOrWhiteSpace(agencyNotes))
             {
-               await _agencyNoteRepository.AddAsync(new AgencyNote { Note = agencyNotes, ComplaintId = entity.Id });
+                await _agencyNoteRepository.AddAsync(new AgencyNote { Note = agencyNotes, ComplaintId = entity.Id });
             }
 
             if (!string.IsNullOrWhiteSpace(additionalInfoRequest))
@@ -162,16 +170,30 @@ namespace Infrastructure.Services
                 });
             }
 
+            var dto = _mapper.Map<ComplaintListDto>(entity);
 
+            var data = new Dictionary<string, string>
+                       {
+                           { "NewStatus", JsonSerializer.Serialize(dto) }
+                        };
+
+
+            await _firebaseCoreService.SendNotificationAndDataToTopic(
+      topic: entity.CitizenId.ToString(),
+      title: entity.GovernmentEntity?.Name ?? "Ministry",
+      body: "Complaint Status Updated",
+      data: data
+  );
+         
 
             return _mapper.Map<ComplaintDetailsDto>(entity);
         }
 
 
-        public async Task<ComplaintDetailsDto> TakeOwnerShip(Guid id,Guid userId)
+        public async Task<ComplaintDetailsDto> TakeOwnerShip(Guid id, Guid userId)
         {
             var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id, c => c.AgencyNotes, c => c.AdditionalInfoRequests) ?? throw new BadRequestException("Complaint not found");
-            if(entity.LockedBy !=null)
+            if (entity.LockedBy != null)
                 throw new BadRequestException("Complaint is already locked");
 
             entity.LockedBy = userId;
@@ -194,7 +216,7 @@ namespace Infrastructure.Services
             if (entity.LockedBy == null)
                 throw new BadRequestException("Complaint is not locked");
 
-            if(entity.LockedBy != userId)
+            if (entity.LockedBy != userId)
                 throw new BadRequestException("You do not own the lock on this complaint");
 
             entity.LockedBy = null;
@@ -214,7 +236,7 @@ namespace Infrastructure.Services
         public async Task<ComplaintDetailsDto> AddAgencyNote(Guid id, Guid userId, string note)
         {
             var entity = await _repository.FirstOrDefaultAsync(c => c.Id == id, c => c.AgencyNotes, c => c.AdditionalInfoRequests) ?? throw new BadRequestException("Complaint not found");
-            
+
             if (entity.LockedBy != userId)
                 throw new BadRequestException("You do not own the lock on this complaint");
 
@@ -230,7 +252,7 @@ namespace Infrastructure.Services
                 ComplaintId = entity.Id,
                 ActionType = ActionType.AgencyNotesAdded,
                 IssuerId = userId,
-                Description = note 
+                Description = note
             });
 
             return _mapper.Map<ComplaintDetailsDto>(entity);
@@ -247,7 +269,7 @@ namespace Infrastructure.Services
                 throw new BadRequestException("Request info cannot be empty");
 
             await _additionalInfoRepository.AddAsync(new AdditionalInfoRequest { RequestMessage = infoRequest, ComplaintId = entity.Id });
-            
+
             // No need to update the complaint entity graph anymore
 
             await _actionRepository.AddAsync(new ComplaintAction
@@ -271,7 +293,7 @@ namespace Infrastructure.Services
 
         private string GenerateReference()
         {
-           
+
             var rand = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
                 .Replace("+", "")
                 .Replace("/", "")
@@ -281,6 +303,6 @@ namespace Infrastructure.Services
             return $"CMP-{rand}";
         }
 
-      
+
     }
 }

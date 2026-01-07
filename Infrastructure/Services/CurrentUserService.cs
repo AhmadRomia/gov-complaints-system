@@ -32,6 +32,15 @@ namespace Infrastructure.Services
         public bool IsAuthenticated =>
             _httpContext.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
 
+        public Guid? GovernmentEntityId
+        {
+            get
+            {
+                var geidClaim = _httpContext.HttpContext?.User?.FindFirst("geid")?.Value;
+                return Guid.TryParse(geidClaim, out var id) ? id : (Guid?)null;
+            }
+        }
+
         public async Task<bool> IsInRoleAsync(string role)
         {
             return _httpContext.HttpContext?.User?.IsInRole(role) ?? false;
