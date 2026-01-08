@@ -12,6 +12,7 @@ using Infrastructure.Persistence;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -147,6 +148,20 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("CitizenPolicy", p => p.RequireRole("Citizen"));
 });
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Example: Limit each IP to 100 requests per minute
+    options.AddFixedWindowLimiter("Fixed", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 3;
+        limiterOptions.Window = TimeSpan.FromSeconds(10);
+        limiterOptions.QueueLimit = 0;
+    });
+});
+
+
 var firebaseConfig = builder.Configuration
     .GetSection("FirebaseSettings")
     .Get<FirebaseSettingConfig>();
@@ -207,4 +222,5 @@ app.UseMiddleware<ErrorHandlerMiddleware>();
 
 app.MapControllers();
 
+app.UseRateLimiter();
 app.Run();

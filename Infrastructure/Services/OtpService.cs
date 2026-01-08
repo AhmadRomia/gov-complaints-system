@@ -29,7 +29,14 @@ namespace Infrastructure.Services
             {
                 var subject = "Your OTP Code";
                 var body = $"<h2>Your OTP is: <b>{otp}</b></h2><p>This code expires in 5 minutes.</p>";
-                await _emailService.SendEmailAsync(user.Email, subject, body);
+                try 
+                {
+                    await _emailService.SendEmailAsync(user.Email, subject, body);
+                }
+                catch
+                {
+                    // Swallow or log email exception to prevent crashing the OTP process
+                }
             }
             else
             {

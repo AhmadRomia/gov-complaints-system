@@ -25,11 +25,10 @@ namespace Infrastructure.Services
 
             var message = new MimeMessage();
             // Parse addresses to validate format and avoid nulls
-            var fromAddress = MailboxAddress.Parse(_settings.From);
-            message.From.Add(new MailboxAddress("Government System", fromAddress.Address));
+            var fromAddress = _settings.From;
+            message.From.Add(new MailboxAddress("Government System", fromAddress));
 
-            var toAddress = MailboxAddress.Parse(to);
-            message.To.Add(new MailboxAddress(toAddress.Name ?? toAddress.Address, toAddress.Address));
+            message.To.Add(new MailboxAddress(to, to));
 
             message.Subject = subject ?? string.Empty;
 

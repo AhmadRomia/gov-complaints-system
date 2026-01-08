@@ -34,6 +34,12 @@ namespace WebApi.Middlewares
 
                 await WriteErrorResponse(context, StatusCodes.Status400BadRequest, ex.Message);
             }
+            catch (ConflictException ex)
+            {
+                _logger.LogWarning("Conflict: {Message}", ex.Message);
+
+                await WriteErrorResponse(context, StatusCodes.Status409Conflict, ex.Message, new List<string> { "409" });
+            }
             //catch (NotFoundException ex)
             //{
             //    _logger.LogWarning("NotFound: {Message}", ex.Message);

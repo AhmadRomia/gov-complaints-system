@@ -3,6 +3,7 @@ using Application.Common.Features.Auth.DTOs;
 using Infrastructure.Services;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace WebApi.Controllers
 {
@@ -23,7 +24,7 @@ namespace WebApi.Controllers
             var result = await _mediator.Send(new RegisterCommand(dto));
             return Ok(result);
         }
-
+        [EnableRateLimiting("Fixed")]
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {

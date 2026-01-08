@@ -1,3 +1,4 @@
+using Application.Common.Exceptions;
 using Application.Common.Features.Auth.DTOs;
 using Application.Common.Interfaces;
 using Domain.Entities;
@@ -10,11 +11,13 @@ namespace Application.Common.Features.Auth.Commands
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IJwtTokenService _jwtTokenService;
+        private readonly IEmailService _emailService;
 
-        public LoginCommandHandler(UserManager<ApplicationUser> userManager, IJwtTokenService jwtTokenService)
+        public LoginCommandHandler(UserManager<ApplicationUser> userManager, IJwtTokenService jwtTokenService, IEmailService emailService)
         {
             _userManager = userManager;
             _jwtTokenService = jwtTokenService;
+            _emailService = emailService;
         }
 
         public async Task<AuthResponseDto> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -32,16 +35,46 @@ namespace Application.Common.Features.Auth.Commands
                 return new AuthResponseDto { Success = false, Message = "User not found" };
             }
 
+            if (!user.IsVerified)
+            {
+                throw new ConflictException("Too many failed login attempts, Please Request New OTP And Confirm it");
+            }
+
             var validPassword = await _userManager.CheckPasswordAsync(user, dto.Password);
             if (!validPassword)
             {
+                var accessFailedCount = await _userManager.GetAccessFailedCountAsync(user);
+                await _userManager.AccessFailedAsync(user);
+
+                if (accessFailedCount >= 4) // This is the 5th failed attempt
+                {
+                    // Reload user to avoid concurrency exception (AccessFailedAsync updates the record)
+                    var userToUpdate = await _userManager.FindByIdAsync(user.Id.ToString());
+                    if (userToUpdate != null)
+                    {
+                        userToUpdate.IsVerified = false;
+                        await _userManager.UpdateAsync(userToUpdate);
+                    }
+
+                    try
+                    {
+                        var emailRecipient = userToUpdate?.Email ?? user.Email;
+                        if (!string.IsNullOrWhiteSpace(emailRecipient) && emailRecipient.Contains("@"))
+                        {
+                            await _emailService.SendEmailAsync(emailRecipient, "Security Alert: Too many failed login attempts", "there are many incorrect password");
+                        }
+                    }
+                    catch
+                    {
+                        // Log email failure if logger was available, but don't crash the response
+                    }
+
+                    throw new ConflictException("Security Alert: Too many failed login attempts, Please Request New OTP");
+                }
                 return new AuthResponseDto { Success = false, Message = "Invalid credentials" };
             }
 
-            if (!user.IsVerified)
-            {
-                return new AuthResponseDto { Success = false, Message = "User not verified" };
-            }
+            await _userManager.ResetAccessFailedCountAsync(user);
 
             var token =await _jwtTokenService.GenerateTokenAsync(user);
 
