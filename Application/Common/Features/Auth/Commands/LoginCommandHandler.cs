@@ -48,6 +48,7 @@ namespace Application.Common.Features.Auth.Commands
             return new AuthResponseDto
             {
                 Success = true,
+                Name = user.FullName,
                 Message = "Login successful",
                 Token = token,
                 UserId = user.Id.ToString(),

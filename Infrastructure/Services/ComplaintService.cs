@@ -4,6 +4,7 @@ using Application.Common.Features.ComplsintUseCase.DTOs;
 using Application.Common.Interfaces;
 using Application.Notifier.Core.Firebase;
 using AutoMapper;
+using DocumentFormat.OpenXml.InkML;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -22,6 +23,7 @@ namespace Infrastructure.Services
         private readonly IRepository<ComplaintAction> _actionRepository;
         private readonly IRepository<AgencyNote> _agencyNoteRepository;
         private readonly IRepository<AdditionalInfoRequest> _additionalInfoRepository;
+        private readonly IRepository<GovernmentEntity> _agencyRepository;
         private readonly IFirebaseCoreService _firebaseCoreService;
 
         public ComplaintService(
@@ -30,6 +32,7 @@ namespace Infrastructure.Services
             IFileService fileService,
             IRepository<ComplaintAction> actionRepository,
             IRepository<AgencyNote> agencyNoteRepository,
+            IRepository<GovernmentEntity> agencyRepository,
             IFirebaseCoreService firebaseCoreService,
             IRepository<AdditionalInfoRequest> additionalInfoRepository)
             : base(repository, mapper)
@@ -38,6 +41,7 @@ namespace Infrastructure.Services
             _actionRepository = actionRepository;
             _agencyNoteRepository = agencyNoteRepository;
             _additionalInfoRepository = additionalInfoRepository;
+            _agencyRepository = agencyRepository;
             _firebaseCoreService = firebaseCoreService;
         }
         public async Task<ComplaintDetailsDto> UpdateWithFilesAsync(
@@ -107,7 +111,7 @@ namespace Infrastructure.Services
             return entity is null ? null : _mapper.Map<ComplaintDetailsDto>(entity);
         }
 
-        public async Task<ComplaintDetailsDto> SetStatusAsync(Guid id, Guid userId, ComplaintStatus status, string? agencyNotes, string? additionalInfoRequest)
+        public async Task<ComplaintDetailsDto> SetStatusAsync(Guid id, Guid userId, ComplaintStatus status)
         {
 
 
@@ -116,24 +120,14 @@ namespace Infrastructure.Services
             if (entity.LockedBy != userId)
                 throw new BadRequestException("You do not own the lock on this complaint");
 
-            if (!AllowedTransitions.TryGetValue(entity.Status, out var allowed) || !allowed.Contains(status))
-                throw new Exception("Invalid status transition");
+            
 
             var previousStatus = entity.Status;
 
             entity.Status = status;
 
+            var agency =await _agencyRepository.FirstOrDefaultAsync(a => a.Id == entity.GovernmentEntityId);
 
-
-            if (!string.IsNullOrWhiteSpace(agencyNotes))
-            {
-                await _agencyNoteRepository.AddAsync(new AgencyNote { Note = agencyNotes, ComplaintId = entity.Id });
-            }
-
-            if (!string.IsNullOrWhiteSpace(additionalInfoRequest))
-            {
-                await _additionalInfoRepository.AddAsync(new AdditionalInfoRequest { RequestMessage = additionalInfoRequest, ComplaintId = entity.Id });
-            }
 
             await _repository.UpdateAsync(entity);
 
@@ -146,29 +140,7 @@ namespace Infrastructure.Services
                 Description = $"Status changed from {previousStatus} to {status}"
             });
 
-            // record agency notes action if provided
-            if (!string.IsNullOrWhiteSpace(agencyNotes))
-            {
-                await _actionRepository.AddAsync(new ComplaintAction
-                {
-                    ComplaintId = entity.Id,
-                    ActionType = ActionType.AgencyNotesAdded,
-                    IssuerId = userId,
-                    Description = agencyNotes
-                });
-            }
 
-            // record additional info request action if provided
-            if (!string.IsNullOrWhiteSpace(additionalInfoRequest))
-            {
-                await _actionRepository.AddAsync(new ComplaintAction
-                {
-                    ComplaintId = entity.Id,
-                    ActionType = ActionType.AdditionalInfoRequested,
-                    IssuerId = userId,
-                    Description = additionalInfoRequest
-                });
-            }
 
             var dto = _mapper.Map<ComplaintListDto>(entity);
 
@@ -180,8 +152,8 @@ namespace Infrastructure.Services
 
             await _firebaseCoreService.SendNotificationAndDataToTopic(
       topic: entity.CitizenId.ToString(),
-      title: entity.GovernmentEntity?.Name ?? "Ministry",
-      body: "Complaint Status Updated",
+      title: agency.Name ?? "Ministry",
+      body: $"Complaint({entity.Title}) Status Updated",
       data: data
   );
          
@@ -245,6 +217,7 @@ namespace Infrastructure.Services
 
             await _agencyNoteRepository.AddAsync(new AgencyNote { Note = note, ComplaintId = entity.Id });
 
+            var agency = await _agencyRepository.FirstOrDefaultAsync(a => a.Id == entity.GovernmentEntityId);
             // No need to update the complaint entity graph anymore
 
             await _actionRepository.AddAsync(new ComplaintAction
@@ -254,6 +227,24 @@ namespace Infrastructure.Services
                 IssuerId = userId,
                 Description = note
             });
+
+            var dto = _mapper.Map<ComplaintListDto>(entity);
+
+            var data = new Dictionary<string, string>
+                       {
+                           { "NewNote", JsonSerializer.Serialize(dto) }
+                        };
+
+
+            await _firebaseCoreService.SendNotificationAndDataToTopic(
+      topic: entity.CitizenId.ToString(),
+      title: agency.Name ?? "Ministry",
+      body: $"New note in Complaint ({entity.Title })",
+      data: data
+  );
+
+
+
 
             return _mapper.Map<ComplaintDetailsDto>(entity);
         }
@@ -279,6 +270,23 @@ namespace Infrastructure.Services
                 IssuerId = userId,
                 Description = infoRequest
             });
+            var agency = await _agencyRepository.FirstOrDefaultAsync(a => a.Id == entity.GovernmentEntityId);
+            var dto = _mapper.Map<ComplaintListDto>(entity);
+
+            var data = new Dictionary<string, string>
+                       {
+                           { "NewRequestAdditionalInfo", JsonSerializer.Serialize(dto) }
+                        };
+
+
+            await _firebaseCoreService.SendNotificationAndDataToTopic(
+      topic: entity.CitizenId.ToString(),
+      title: agency.Name ?? "Ministry",
+      body: $"Agency Request AdditionalInfo in Complaint ({entity.Title})",
+      data: data
+  );
+
+
 
             return _mapper.Map<ComplaintDetailsDto>(entity);
         }

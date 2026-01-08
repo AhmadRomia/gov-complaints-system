@@ -8,7 +8,7 @@ using Application.Notifier.Core.Firebase;
 
 namespace Application.Common.Features.ComplsintUseCase.Commands
 {
-    public record SetComplaintStatusCommand(Guid Id, ComplaintStatus Status, string? AgencyNotes, string? AdditionalInfoRequest) : IRequest<ComplaintDetailsDto>;
+    public record SetComplaintStatusCommand(Guid Id, ComplaintStatus Status) : IRequest<ComplaintDetailsDto>;
 
     public class SetComplaintStatusCommandHandler : IRequestHandler<SetComplaintStatusCommand, ComplaintDetailsDto>
     {
@@ -31,7 +31,7 @@ namespace Application.Common.Features.ComplsintUseCase.Commands
 
             var userId = _currentUser.UserId;
 
-            var response= await _service.SetStatusAsync(request.Id,userId.Value, request.Status, request.AgencyNotes, request.AdditionalInfoRequest);
+            var response= await _service.SetStatusAsync(request.Id,userId.Value, request.Status);
 
            
             return response;

@@ -78,7 +78,7 @@ namespace WebApi.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Agency,Admin")]
         public async Task<IActionResult> SetStatus([FromBody] SetComplaintStatusDto dto)
         {
-            var result = await _mediator.Send(new SetComplaintStatusCommand(dto.Id, dto.Status, dto.AgencyNotes, dto.AdditionalInfoRequest));
+            var result = await _mediator.Send(new SetComplaintStatusCommand(dto.Id, dto.Status));
             return Ok(result);
         }
 
