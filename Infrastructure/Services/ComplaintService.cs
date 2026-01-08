@@ -25,6 +25,10 @@ namespace Infrastructure.Services
         private readonly IRepository<AdditionalInfoRequest> _additionalInfoRepository;
         private readonly IRepository<GovernmentEntity> _agencyRepository;
         private readonly IFirebaseCoreService _firebaseCoreService;
+        private static readonly JsonSerializerOptions _camelCaseOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
 
         public ComplaintService(
             IRepository<Complaint> repository,
@@ -146,7 +150,7 @@ namespace Infrastructure.Services
 
             var data = new Dictionary<string, string>
                        {
-                           { "NewStatus", JsonSerializer.Serialize(dto) }
+                           { "NewStatus", JsonSerializer.Serialize(dto,_camelCaseOptions) }
                         };
 
 
@@ -232,7 +236,7 @@ namespace Infrastructure.Services
 
             var data = new Dictionary<string, string>
                        {
-                           { "NewNote", JsonSerializer.Serialize(dto) }
+                           { "NewNote", JsonSerializer.Serialize(dto,_camelCaseOptions) }
                         };
 
 
@@ -275,7 +279,7 @@ namespace Infrastructure.Services
 
             var data = new Dictionary<string, string>
                        {
-                           { "NewRequestAdditionalInfo", JsonSerializer.Serialize(dto) }
+                           { "NewRequestAdditionalInfo", JsonSerializer.Serialize(dto, _camelCaseOptions) }
                         };
 
 
