@@ -34,6 +34,10 @@ namespace Application.Common.Features.Auth.Commands
             {
                 return new AuthResponseDto { Success = false, Message = "User not found" };
             }
+            if(!user.IsActive && user.UserRole==Domain.Enums.UserRoleEnum.Citizen)
+            {
+                return new AuthResponseDto { Success = false, Message = "This userIs not Active" };
+            }
 
             if (!user.IsVerified)
             {

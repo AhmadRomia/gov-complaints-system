@@ -39,6 +39,12 @@ namespace Application.Common.Features.ComplsintUseCase.Mapping
 
             CreateMap<AgencyNote, AgencyNoteDto>();
             CreateMap<AdditionalInfoRequest, AdditionalInfoRequestDto>();
+
+            CreateMap<ComplaintVersion, ComplaintVersionDto>();
+            CreateMap<Complaint, ComplaintVersion>()
+                .ForMember(d => d.Id, opt => opt.Ignore())
+                .ForMember(d => d.ComplaintId, opt => opt.MapFrom(s => s.Id))
+                .ForMember(d => d.Complaint, opt => opt.Ignore());
         }
 
         private static ComplaintType MapType(string type)

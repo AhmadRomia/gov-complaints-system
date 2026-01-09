@@ -33,6 +33,8 @@ namespace Infrastructure.Persistence.Configurations
                    .WithOne(a => a.Complaint)
                    .HasForeignKey(a => a.ComplaintId)
                    .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasIndex(c => c.ReferenceNumber);
         }
     }
 }

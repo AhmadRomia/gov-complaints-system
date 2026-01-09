@@ -128,6 +128,13 @@ namespace WebApi.Controllers
             var result = await _mediator.Send(new RequestAdditionalInfoCommand(id, dto.RequestMessage));
             return Ok(result);
         }
+        [HttpGet("{id}/versions")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Agency,Admin")]
+        public async Task<IActionResult> GetVersions(Guid id)
+        {
+            var result = await _mediator.Send(new GetComplaintVersionsQuery(id));
+            return Ok(result);
+        }
 
     }
 }

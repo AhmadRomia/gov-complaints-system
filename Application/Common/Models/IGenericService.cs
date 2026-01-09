@@ -20,7 +20,7 @@ namespace Application.Common.Models
       Expression<Func<TEntity, bool>> filter = null,
       Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
       string includes = null);
-        Task<PagingResult<TList>> GetPagedAsync(
+        Task<PageResultResponseDto<TList>> GetPagedAsync(
              int page, int pageSize,
                Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
              Expression<Func<TEntity, bool>> filter = null,

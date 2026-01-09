@@ -58,17 +58,19 @@ namespace Infrastructure.Services
             return _mapper.Map<List<TList>>(data);
         }
 
-        public async Task<PagingResult<TList>> GetPagedAsync(
+        public async Task<PageResultResponseDto<TList>> GetPagedAsync(
             int page, int pageSize,
               Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
             Expression<Func<TEntity, bool>> filter = null,
             params Expression<Func<TEntity, object>>[] includes)
         {
             var result = await _repository.GetPagedAsync(page, pageSize, filter, orderBy, includes);
-            return new PagingResult<TList>
+            return new PageResultResponseDto<TList>
             {
-                Count = result.Count,
-                Data = _mapper.Map<List<TList>>(result.Data)
+                TotalCount = result.Count,
+                Items = _mapper.Map<List<TList>>(result.Data),
+                PageNumber = page,
+                ResultsPerPage = pageSize
             };
         }
 

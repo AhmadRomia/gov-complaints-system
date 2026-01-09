@@ -25,6 +25,8 @@ namespace Infrastructure.Services
         private readonly IRepository<AdditionalInfoRequest> _additionalInfoRepository;
         private readonly IRepository<GovernmentEntity> _agencyRepository;
         private readonly IFirebaseCoreService _firebaseCoreService;
+        private readonly IRepository<ComplaintVersion> _versionRepository;
+        private readonly ICurrentUserService _currentUser;
         private static readonly JsonSerializerOptions _camelCaseOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -38,7 +40,9 @@ namespace Infrastructure.Services
             IRepository<AgencyNote> agencyNoteRepository,
             IRepository<GovernmentEntity> agencyRepository,
             IFirebaseCoreService firebaseCoreService,
-            IRepository<AdditionalInfoRequest> additionalInfoRepository)
+            IRepository<AdditionalInfoRequest> additionalInfoRepository,
+            IRepository<ComplaintVersion> versionRepository,
+            ICurrentUserService currentUser)
             : base(repository, mapper)
         {
             _fileService = fileService;
@@ -47,6 +51,8 @@ namespace Infrastructure.Services
             _additionalInfoRepository = additionalInfoRepository;
             _agencyRepository = agencyRepository;
             _firebaseCoreService = firebaseCoreService;
+            _versionRepository = versionRepository;
+            _currentUser = currentUser;
         }
         public async Task<ComplaintDetailsDto> UpdateWithFilesAsync(
     Complaint complaint,
@@ -80,6 +86,7 @@ namespace Infrastructure.Services
             }
 
             await _repository.UpdateAsync(complaint);
+            await CreateSnapshotAsync(complaint);
 
             return _mapper.Map<ComplaintDetailsDto>(complaint);
         }
@@ -106,6 +113,8 @@ namespace Infrastructure.Services
             }
 
             var created = await _repository.AddAsync(entity);
+            await CreateSnapshotAsync(created);
+
             return _mapper.Map<ComplaintDetailsDto>(created);
         }
 
@@ -134,6 +143,7 @@ namespace Infrastructure.Services
 
 
             await _repository.UpdateAsync(entity);
+            await CreateSnapshotAsync(entity);
 
             // record action: status changed
             await _actionRepository.AddAsync(new ComplaintAction
@@ -174,6 +184,7 @@ namespace Infrastructure.Services
 
             entity.LockedBy = userId;
             await _repository.UpdateAsync(entity);
+            await CreateSnapshotAsync(entity);
 
             await _actionRepository.AddAsync(new ComplaintAction
             {
@@ -197,6 +208,7 @@ namespace Infrastructure.Services
 
             entity.LockedBy = null;
             await _repository.UpdateAsync(entity);
+            await CreateSnapshotAsync(entity);
 
             await _actionRepository.AddAsync(new ComplaintAction
             {
@@ -231,6 +243,8 @@ namespace Infrastructure.Services
                 IssuerId = userId,
                 Description = note
             });
+
+            await CreateSnapshotAsync(entity);
 
             var dto = _mapper.Map<ComplaintListDto>(entity);
 
@@ -274,6 +288,9 @@ namespace Infrastructure.Services
                 IssuerId = userId,
                 Description = infoRequest
             });
+
+            await CreateSnapshotAsync(entity);
+
             var agency = await _agencyRepository.FirstOrDefaultAsync(a => a.Id == entity.GovernmentEntityId);
             var dto = _mapper.Map<ComplaintListDto>(entity);
 
@@ -315,6 +332,29 @@ namespace Infrastructure.Services
             return $"CMP-{rand}";
         }
 
-
+        private async Task CreateSnapshotAsync(Complaint complaint)
+        {
+            var versionCount = await _versionRepository.CountAsync(v => v.ComplaintId == complaint.Id);
+            var version = new ComplaintVersion
+            {
+                ComplaintId = complaint.Id,
+                VersionNumber = versionCount + 1,
+                Title = complaint.Title,
+                Description = complaint.Description,
+                Severity = complaint.Severity,
+                Status = complaint.Status,
+                CitizenId = complaint.CitizenId,
+                ReferenceNumber = complaint.ReferenceNumber,
+                Type = complaint.Type,
+                LocationLong = complaint.LocationLong,
+                LocationLat = complaint.LocationLat,
+                GovernmentEntityId = complaint.GovernmentEntityId,
+                Governorate = complaint.Governorate,
+                LockedBy = complaint.LockedBy,
+                ModifiedAt = DateTime.UtcNow,
+                ModifiedBy = _currentUser.UserId?.ToString()
+            };
+            await _versionRepository.AddAsync(version);
+        }
     }
 }

@@ -12,9 +12,9 @@ using System.Linq.Expressions;
 
 namespace Application.Common.Features.ComplsintUseCase.Queries
 {
-    public record GetPagedComplaintsQuery(int Page, int Size,Guid? agencyId, ComplaintStatus? ComplaintStatus) : IRequest<List<ComplaintListDto>>;
+    public record GetPagedComplaintsQuery(int Page, int Size,Guid? agencyId, ComplaintStatus? ComplaintStatus) : IRequest<PageResultResponseDto<ComplaintListDto>>;
 
-    public class GetPagedComplaintsQueryHandler : IRequestHandler<GetPagedComplaintsQuery, List<ComplaintListDto>>
+    public class GetPagedComplaintsQueryHandler : IRequestHandler<GetPagedComplaintsQuery, PageResultResponseDto<ComplaintListDto>>
     {
      
         private readonly IMapper _mapper;
@@ -38,7 +38,7 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
         }
 
 
-        public async Task<List<ComplaintListDto>> Handle(GetPagedComplaintsQuery request, CancellationToken cancellationToken)
+        public async Task<PageResultResponseDto<ComplaintListDto>> Handle(GetPagedComplaintsQuery request, CancellationToken cancellationToken)
         {
             var userId = _currentUser.UserId
                        ?? throw new BadRequestException("User not authenticated");
@@ -55,7 +55,7 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
                 throw new BadRequestException("User has no associated government entity");
 
           
-            PagingResult<ComplaintListDto> page =new();
+            PageResultResponseDto<ComplaintListDto> page =new();
             if (await _userManager.IsInRoleAsync(user, "Agency"))
             {
                 var govEntityId = user.GovernmentEntityId.Value;
@@ -67,7 +67,7 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
                     filter = a => a.GovernmentEntityId == govEntityId && a.Status == status;
                 }
 
-                page = await _complaintService.GetPagedAsync(request.Page, request.Size, a => a.OrderByDescending(c => c.Severity), filter, c => c.AgencyNotes, c => c.AdditionalInfoRequests);
+                page = await _complaintService.GetPagedAsync(request.Page, request.Size, a => a.OrderByDescending(c => c.CreatedAt), filter, c => c.GovernmentEntity, c => c.Citizen, c => c.AgencyNotes, c => c.AdditionalInfoRequests);
             }
             else
             {
@@ -90,9 +90,9 @@ namespace Application.Common.Features.ComplsintUseCase.Queries
                     filter = a => a.Status == status;
                 }
 
-                page = await _complaintService.GetPagedAsync(request.Page, request.Size, a => a.OrderByDescending(c => c.Severity), filter, c => c.AgencyNotes, c => c.AdditionalInfoRequests);
+                page = await _complaintService.GetPagedAsync(request.Page, request.Size, a => a.OrderByDescending(c => c.CreatedAt), filter, c => c.GovernmentEntity, c => c.Citizen, c => c.AgencyNotes, c => c.AdditionalInfoRequests);
             }
-            return page.Data; 
+            return page; 
         }
     }
 }
