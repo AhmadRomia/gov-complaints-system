@@ -13,6 +13,7 @@ using Application.Common.Behaviors;
 using MediatR;
 using Application.Common.Features.Admin;
 using Application.Notifier.Core.Firebase;
+using Application.Common.Models;
 
 namespace Infrastructure
 {
@@ -77,8 +78,8 @@ namespace Infrastructure
             services.AddScoped<IFirebaseCoreService, FirebaseCoreService>();
             services.AddScoped<IComplaintExportService, ComplaintExportService>();
 
-
-
+            services.Configure<TelegramSettings>(configuration.GetSection("TelegramSettings"));
+            services.AddHttpClient<ITelegramService, TelegramService>();
 
             return services;
         }

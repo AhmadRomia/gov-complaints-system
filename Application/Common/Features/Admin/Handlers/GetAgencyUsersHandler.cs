@@ -37,6 +37,7 @@ namespace Application.Common.Features.Admin.Handlers
                         Id = user.Id,
                         FullName = user.FullName,
                         Email = user.Email,
+                        IsActive = user.IsActive,
                         GovernmentEntityId = user.GovernmentEntityId
                     });
                 }

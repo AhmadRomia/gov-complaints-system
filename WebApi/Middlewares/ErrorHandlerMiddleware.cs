@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Application.Common.Exceptions;
 using FluentValidation;
+using Application.Common.Interfaces;
 
 
 namespace WebApi.Middlewares
@@ -9,10 +10,12 @@ namespace WebApi.Middlewares
     public class ErrorHandlerMiddleware : IMiddleware
     {
         private readonly ILogger<ErrorHandlerMiddleware> _logger;
+        private readonly ITelegramService _telegramService;
 
-        public ErrorHandlerMiddleware(ILogger<ErrorHandlerMiddleware> logger)
+        public ErrorHandlerMiddleware(ILogger<ErrorHandlerMiddleware> logger, ITelegramService telegramService)
         {
             _logger = logger;
+            _telegramService = telegramService;
         }
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -40,15 +43,25 @@ namespace WebApi.Middlewares
 
                 await WriteErrorResponse(context, StatusCodes.Status409Conflict, ex.Message, new List<string> { "409" });
             }
-            //catch (NotFoundException ex)
-            //{
-            //    _logger.LogWarning("NotFound: {Message}", ex.Message);
+            catch (NotFoundException ex)
+            {
+                _logger.LogWarning("NotFound: {Message}", ex.Message);
 
-            //    await WriteErrorResponse(context, StatusCodes.Status404NotFound, ex.Message);
-            //}
+                await WriteErrorResponse(context, StatusCodes.Status404NotFound, ex.Message);
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unhandled error");
+
+                var path = context.Request.Path;
+                var method = context.Request.Method;
+                var userId = context.User?.FindFirst("uid")?.Value ?? 
+                             context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? 
+                             "Anonymous";
+
+                var additionalInfo = $"Path: {path}\nMethod: {method}\nUser: {userId}";
+
+                await _telegramService.SendExceptionAsync(ex, additionalInfo);
 
                 await WriteErrorResponse(context, StatusCodes.Status500InternalServerError,
                     "An unexpected error occurred");

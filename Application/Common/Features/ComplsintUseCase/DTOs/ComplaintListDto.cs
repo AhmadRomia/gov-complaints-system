@@ -13,6 +13,8 @@ namespace Application.Common.Features.ComplsintUseCase.DTOs
         public string Description { get; set; }
         public ComplaintStatus Status { get; set; }
         public int Severity { get; set; }
+
+        public Guid GovernmentEntityId { get; set; }
         public string? GovernmentEntityName { get; set; }
 
         public string? CitizenName { get; set; }

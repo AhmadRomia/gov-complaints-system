@@ -162,19 +162,15 @@ builder.Services.AddRateLimiter(options =>
 });
 
 
-var firebaseConfig = builder.Configuration
-    .GetSection("FirebaseSettings")
-    .Get<FirebaseSettingConfig>();
+var firebasePath = Path.Combine(
+    builder.Environment.ContentRootPath,
+    "service-account.json"
+);
 
-
-if (firebaseConfig is null)
-    throw new Exception("FirebaseSettings not found");
-
-if (FirebaseApp.DefaultInstance == null)
+FirebaseApp.Create(new AppOptions
 {
-    FirebaseApp.Create(new AppOptions { Credential = GoogleCredential.FromFile("service-account.json") });
-
-}
+    Credential = GoogleCredential.FromFile(firebasePath)
+});
 // =======================
 // Services
 // =======================
@@ -224,3 +220,4 @@ app.MapControllers();
 
 app.UseRateLimiter();
 app.Run();
+

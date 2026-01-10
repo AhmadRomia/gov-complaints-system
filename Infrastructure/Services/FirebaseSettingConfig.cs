@@ -1,66 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 
 namespace Application.Notifier.Core.Firebase;
 
 public class FirebaseSettingConfig
 {
-    [JsonPropertyName("type")]
-    public string Type { get; set; } = string.Empty;
-
-    [JsonPropertyName("project_id")]
-    public string ProjectId { get; set; } = string.Empty;
-
-    [JsonPropertyName("private_key_id")]
-    public string PrivateKeyId { get; set; } = string.Empty;
-
-    [JsonPropertyName("private_key")]
-    public string PrivateKey { get; set; } = string.Empty;
-
-    [JsonPropertyName("client_email")]
-    public string ClientEmail { get; set; } = string.Empty;
-
-    [JsonPropertyName("client_id")]
-    public string ClientId { get; set; } = string.Empty;
-
-    [JsonPropertyName("auth_uri")]
-    public string AuthUri { get; set; } = string.Empty;
-
-    [JsonPropertyName("token_uri")]
-    public string TokenUri { get; set; } = string.Empty;
-
-    [JsonPropertyName("auth_provider_x509_cert_url")]
-    public string AuthProviderX509CertUrl { get; set; } = string.Empty;
-
-    [JsonPropertyName("client_x509_cert_url")]
-    public string ClientX509CertUrl { get; set; } = string.Empty;
-
-    [JsonPropertyName("universe_domain")]
-    public string UniverseDomain { get; set; } = string.Empty;
+    public string type { get; set; } = string.Empty;
+    public string project_id { get; set; } = string.Empty;
+    public string private_key_id { get; set; } = string.Empty;
+    public string private_key { get; set; } = string.Empty;
+    public string client_email { get; set; } = string.Empty;
+    public string client_id { get; set; } = string.Empty;
+    public string auth_uri { get; set; } = string.Empty;
+    public string token_uri { get; set; } = string.Empty;
+    public string auth_provider_x509_cert_url { get; set; } = string.Empty;
+    public string client_x509_cert_url { get; set; } = string.Empty;
+    public string universe_domain { get; set; } = string.Empty;
 
     public string ToJson()
     {
-        var fixedKey = PrivateKey.Replace("\\n", "\n");
-
-        return JsonSerializer.Serialize(new
+        // The private_key in appsettings might have actual \n characters or escaped \\n.
+        // The binder reads it correctly, but we ensure it's in the format Google expects.
+        if (!string.IsNullOrEmpty(private_key))
         {
-            type = Type,
-            project_id = ProjectId,
-            private_key_id = PrivateKeyId,
-            private_key = fixedKey,
-            client_email = ClientEmail,
-            client_id = ClientId,
-            auth_uri = AuthUri,
-            token_uri = TokenUri,
-            auth_provider_x509_cert_url = AuthProviderX509CertUrl,
-            client_x509_cert_url = ClientX509CertUrl,
-            universe_domain = UniverseDomain
-        });
-    }
+            private_key = private_key.Replace("\\n", "\n");
+        }
 
+        return JsonSerializer.Serialize(this);
+    }
 }
